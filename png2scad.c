@@ -200,7 +200,7 @@ static inline void output_stl_tri(const struct stl_facet *facet)
 static int stl_faces = 0;
 
 struct stl_facets {
-    struct stl_facet *v; /* array of facets */
+    struct stl_facet **v; /* array of facets */
     int facetc; /* number of valid facets in the array */
     int facet_alloc; /* numer of facets currently allocated */
 };
@@ -210,9 +210,9 @@ static void add_facet(struct stl_facets *facets, struct stl_facet *newfacet)
     if ((facets->facetc + 1) > facets->facet_alloc) {
         /* array needs extending */
         facets->v = realloc(facets->v, (facets->facet_alloc + 1000) * sizeof(struct stl_facet *));
-        facets->facet_alloc += 1000
+        facets->facet_alloc += 1000;
     }
-    facets->v + facets->facetc = newfacet;
+    *(facets->v + facets->facetc) = newfacet;
     facets->facetc++;
 }
 
@@ -226,20 +226,20 @@ create_facet(float nx,float ny, float nz,
     struct stl_facet *newfacet;
     newfacet = malloc(sizeof(struct stl_facet));
 
-    newfacet.nx = nx;
-    newfacet.ny = ny;
-    newfacet.nz = nz;
-    newfacet.vx[0] = vx0;
-    newfacet.vy[0] = vy0;
-    newfacet.vz[0] = vz0;
+    newfacet->nx = nx;
+    newfacet->ny = ny;
+    newfacet->nz = nz;
+    newfacet->vx[0] = vx0;
+    newfacet->vy[0] = vy0;
+    newfacet->vz[0] = vz0;
 
-    newfacet.vx[1] = vx1;
-    newfacet.vy[1] = vy1;
-    newfacet.vz[1] = vz1;
+    newfacet->vx[1] = vx1;
+    newfacet->vy[1] = vy1;
+    newfacet->vz[1] = vz1;
 
-    newfacet.vx[2] = vx2;
-    newfacet.vy[2] = vy2;
-    newfacet.vz[2] = vz2;
+    newfacet->vx[2] = vx2;
+    newfacet->vy[2] = vy2;
+    newfacet->vz[2] = vz2;
 
     return newfacet;
 }
