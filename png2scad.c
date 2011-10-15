@@ -197,25 +197,29 @@ static inline void output_stl_tri(const struct stl_facet *facet)
            facet->vx[2],facet->vy[2],facet->vz[2]);
 }
 
-static int stl_faces = 0;
-
 struct stl_facets {
     struct stl_facet **v; /* array of facets */
-    int facetc; /* number of valid facets in the array */
+    int count; /* number of valid facets in the array */
     int facet_alloc; /* numer of facets currently allocated */
 };
 
 static void add_facet(struct stl_facets *facets, struct stl_facet *newfacet)
 {
-    if ((facets->facetc + 1) > facets->facet_alloc) {
+    if ((facets->count + 1) > facets->facet_alloc) {
         /* array needs extending */
         facets->v = realloc(facets->v, (facets->facet_alloc + 1000) * sizeof(struct stl_facet *));
         facets->facet_alloc += 1000;
     }
-    *(facets->v + facets->facetc) = newfacet;
-    facets->facetc++;
+    *(facets->v + facets->count) = newfacet;
+    facets->count++;
 }
 
+/* 3d point */
+typedef struct pnt {
+    float x;
+    float y;
+    float z;
+} pnt;
 
 static inline struct stl_facet *
 create_facet(float nx,float ny, float nz,
@@ -223,12 +227,42 @@ create_facet(float nx,float ny, float nz,
              float vx1,float vy1, float vz1,
              float vx2,float vy2, float vz2)
 {
+    pnt a;
+    pnt b;
+    pnt n;
     struct stl_facet *newfacet;
+
     newfacet = malloc(sizeof(struct stl_facet));
+
+    /* va = v1 - v0
+     * vb = v2 - v0
+     *
+     * n = va x vb (cross product)     
+     */
+    a.x = vx1 - vx0;
+    a.y = vy1 - vy0;
+    a.z = vz1 - vz0;
+
+    b.x = vx2 - vx0;
+    b.y = vy2 - vy0;
+    b.z = vz2 - vz0;
+
+    n.x = a.y * b.z - a.z * b.y;
+    n.y = a.z * b.x - a.x * b.z;
+    n.z = a.x * b.y - a.y * b.x;
+
+    if ((n.x != nx) || (n.y != ny) || (n.z != nz)) {
+        fprintf(stderr, "passed %f,%f,%f calc %f,%f,%f\n", 
+                nx, ny, nz,
+                n.x, n.y, n.z);
+    }
 
     newfacet->nx = nx;
     newfacet->ny = ny;
     newfacet->nz = nz;
+
+
+
     newfacet->vx[0] = vx0;
     newfacet->vy[0] = vy0;
     newfacet->vz[0] = vz0;
@@ -247,11 +281,7 @@ create_facet(float nx,float ny, float nz,
 static void 
 output_stl_cube(struct stl_facets *facets, int x,int y, int z, int width, int height, int depth, uint32_t faces)
 {
-    struct stl_facet facet;
-
     if ((faces & STL_FACE_TOP) != 0) {
-        stl_faces+=2;
-
         add_facet(facets, 
                   create_facet(0        , 1.0       , 0        ,
                                x        , y + height, z        ,
@@ -264,130 +294,79 @@ output_stl_cube(struct stl_facets *facets, int x,int y, int z, int width, int he
                                x + width, y + height, z + depth,
                                x + width, y + height, z));
 
-        facet.nx = 0;
-        facet.ny = 1.0;
-        facet.nz = 0;
-        facet.vx[0] = x;
-        facet.vy[0] = y + height;
-        facet.vz[0] = z;
-
-        facet.vx[1] = x;
-        facet.vy[1] = y + height;
-        facet.vz[1] = z + depth;
-
-        facet.vx[2] = x + width;
-        facet.vy[2] = y + height;
-        facet.vz[2] = z;
-
-        output_stl_tri(&facet);
-        facet.vz[0] = z + depth;
-        facet.vx[1] = x + width;
-        output_stl_tri(&facet);
     }
 
     if ((faces & STL_FACE_BOT) != 0) {
-        stl_faces+=2;
+        add_facet(facets, 
+                  create_facet(0        , -1.0      , 0        ,
+                               x        , y         , z        ,
+                               x + width, y         , z        ,
+                               x        , y         , z + depth));
 
-        facet.nx = 0;
-        facet.ny = -1.0;
-        facet.nz = 0;
-        facet.vx[0] = x;
-        facet.vy[0] = y;
-        facet.vz[0] = z;
-        facet.vx[1] = x;
-        facet.vy[1] = y;
-        facet.vz[1] = z + depth;
-        facet.vx[2] = x + width;
-        facet.vy[2] = y;
-        facet.vz[2] = z;
-        output_stl_tri(&facet);
-        facet.vz[0] = z + depth;
-        facet.vx[1] = x + width;
-        output_stl_tri(&facet);
+        add_facet(facets, 
+                  create_facet(0        , -1.0      , 0        ,
+                               x        , y         , z + depth,
+                               x + width, y         , z        ,
+                               x + width, y         , z + depth));
     }
 
     if ((faces & STL_FACE_FRONT) != 0) {
-        stl_faces+=2;
+        add_facet(facets, 
+                  create_facet(0        , 0         , -1.0     ,
+                               x        , y         , z        ,
+                               x        , y + height, z        ,
+                               x + width, y         , z        ));
 
-        facet.nx = 0;
-        facet.ny = 0;
-        facet.nz = -1.0;
-        facet.vx[0] = x;
-        facet.vy[0] = y;
-        facet.vz[0] = z;
-        facet.vx[1] = x;
-        facet.vy[1] = y + height;
-        facet.vz[1] = z;
-        facet.vx[2] = x + width;
-        facet.vy[2] = y;
-        facet.vz[2] = z;
-        output_stl_tri(&facet);
-        facet.vy[0] = y + height;
-        facet.vx[1] = x + width;
-        output_stl_tri(&facet);
+        add_facet(facets, 
+                  create_facet(0        , 0         , -1.0     ,
+                               x        , y + height, z        ,
+                               x + width, y + height, z        ,
+                               x + width, y         , z        ));
+
     }
 
     if ((faces & STL_FACE_BACK) != 0) {
-        stl_faces+=2;
+        add_facet(facets, 
+                  create_facet(0        , 0         , 1.0      ,
+                               x        , y         , z + depth,
+                               x + width, y         , z + depth,
+                               x        , y + height, z + depth));
 
-        facet.nx = 0;
-        facet.ny = 0;
-        facet.nz = 1.0;
-        facet.vx[0] = x;
-        facet.vy[0] = y;
-        facet.vz[0] = z + depth;
-        facet.vx[1] = x;
-        facet.vy[1] = y + height;
-        facet.vz[1] = z + depth;
-        facet.vx[2] = x + width;
-        facet.vy[2] = y;
-        facet.vz[2] = z + depth;
-        output_stl_tri(&facet);
-        facet.vy[0] = y + height;
-        facet.vx[1] = x + width;
-        output_stl_tri(&facet);
+        add_facet(facets, 
+                  create_facet(0        , 0         , 1.0      ,
+                               x        , y + height, z + depth,
+                               x + width, y         , z + depth,
+                               x + width, y + height, z + depth));
     }
 
     if ((faces & STL_FACE_LEFT) != 0) {
-        stl_faces+=2;
+        add_facet(facets, 
+                  create_facet(-1.0     , 0         , 0        ,
+                               x        , y         , z        ,
+                               x        , y         , z + depth,
+                               x        , y + height, z        ));
 
-        facet.nx = -1.0;
-        facet.ny = 0;
-        facet.nz = 0;
-        facet.vx[0] = x;
-        facet.vy[0] = y;
-        facet.vz[0] = z;
-        facet.vx[1] = x;
-        facet.vy[1] = y + height;
-        facet.vz[1] = z;
-        facet.vx[2] = x;
-        facet.vy[2] = y;
-        facet.vz[2] = z + depth;
-        output_stl_tri(&facet);
-        facet.vy[0] = y + height;
-        facet.vz[1] = z + depth;
-        output_stl_tri(&facet);
+        add_facet(facets, 
+                  create_facet(-1.0     , 0         , 0        ,
+                               x        , y + height, z        ,
+                               x        , y         , z + depth,
+                               x        , y + height, z + depth));
+
     }
 
     if ((faces & STL_FACE_RIGHT) != 0) {
-        stl_faces+=2;
+        add_facet(facets, 
+                  create_facet(1.0      , 0         , 0        ,
+                               x + width, y         , z        ,
+                               x + width, y + height, z        ,
+                               x + width, y         , z + depth));
 
-        facet.nx = 1.0;
-        facet.ny = 0;
-        facet.nz = 0;
-        facet.vx[0] = x + width;
-        facet.vy[0] = y;
-        facet.vz[0] = z;
-        facet.vx[1] = x + width;
-        facet.vy[1] = y + height;
-        facet.vz[1] = z;
-        facet.vx[2] = x + width;
-        facet.vy[2] = y;
-        facet.vz[2] = z + depth;
-        output_stl_tri(&facet);
-        facet.vy[0] = y + height;
-        facet.vz[1] = z + depth;
-        output_stl_tri(&facet);
+        add_facet(facets, 
+                  create_facet(1.0      , 0         , 0        ,
+                               x + width, y + height, z        ,
+                               x + width, y + height, z + depth,
+                               x + width, y         , z + depth));
+
     }
 
 
@@ -423,6 +402,17 @@ uint32_t get_stl_face(uint8_t *bm, uint32_t width, uint32_t height, int x, int y
     return faces;
 }
 
+/** convert raster image into facets 
+ *
+ * consider each pixel in the raster image:
+ *   - generate a bitfield indicating on which sides of the pixel faces need to
+ *     be covered to generate a convex manifold.
+ *   - add triangle facets to list for each face present
+ *
+ * @todo This could probably be better converted to a marching cubes solution
+ *   or as this is a simple 2d extrusion perhaps modified marching squares
+ *   http://en.wikipedia.org/wiki/Marching_cubes
+ */
 void stl_gen_facets(struct stl_facets *facets, uint8_t *bm, uint32_t width, uint32_t height, uint8_t transparent)
 {
     int row_loop;
@@ -448,19 +438,25 @@ void stl_gen_facets(struct stl_facets *facets, uint8_t *bm, uint32_t width, uint
 
     }
 
-    fprintf(stderr, "cubes %d faces %d\n", cubes, stl_faces);
+    fprintf(stderr, "cubes %d facets %d\n", cubes, facets->count);
 
 }
 
 void output_flat_stl(uint8_t *bm, uint32_t width, uint32_t height, uint8_t transparent)
 {
     struct stl_facets facets;
+    int floop;
 
     memset(&facets, 0 , sizeof(struct stl_facets));
 
     printf("solid png2stl_Model\n");
 
     stl_gen_facets(&facets, bm, width, height, transparent);
+
+    for (floop=0; floop < facets.count; floop++) {
+        output_stl_tri(*(facets.v + floop));
+    }
+
 
     printf("endsolid png2stl_Model\n");
 
