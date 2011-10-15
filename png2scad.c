@@ -170,11 +170,16 @@ enum stl_faces {
     STL_FACE_RIGHT = 32,
 };
 
+/* 3d point */
+typedef struct pnt {
+    float x;
+    float y;
+    float z;
+} pnt;
+
 struct stl_facet {
-    /* normals */
-    float nx;
-    float ny;
-    float nz;
+    /* normal */
+    pnt n;
 
     /* vertecies */
     float vx[3];
@@ -191,7 +196,7 @@ static inline void output_stl_tri(const struct stl_facet *facet)
            "      vertex %.6f %.6f %.6f\n"
            "    endloop\n"
            "  endfacet\n", 
-           facet->nx, facet->ny, facet->nz,
+           facet->n.x, facet->n.y, facet->n.z,
            facet->vx[0],facet->vy[0],facet->vz[0],
            facet->vx[1],facet->vy[1],facet->vz[1],
            facet->vx[2],facet->vy[2],facet->vz[2]);
@@ -214,22 +219,14 @@ static void add_facet(struct stl_facets *facets, struct stl_facet *newfacet)
     facets->count++;
 }
 
-/* 3d point */
-typedef struct pnt {
-    float x;
-    float y;
-    float z;
-} pnt;
 
 static inline struct stl_facet *
-create_facet(float nx,float ny, float nz,
-             float vx0,float vy0, float vz0,
+create_facet(float vx0,float vy0, float vz0,
              float vx1,float vy1, float vz1,
              float vx2,float vy2, float vz2)
 {
     pnt a;
     pnt b;
-    pnt n;
     struct stl_facet *newfacet;
 
     newfacet = malloc(sizeof(struct stl_facet));
@@ -247,21 +244,9 @@ create_facet(float nx,float ny, float nz,
     b.y = vy2 - vy0;
     b.z = vz2 - vz0;
 
-    n.x = a.y * b.z - a.z * b.y;
-    n.y = a.z * b.x - a.x * b.z;
-    n.z = a.x * b.y - a.y * b.x;
-
-    if ((n.x != nx) || (n.y != ny) || (n.z != nz)) {
-        fprintf(stderr, "passed %f,%f,%f calc %f,%f,%f\n", 
-                nx, ny, nz,
-                n.x, n.y, n.z);
-    }
-
-    newfacet->nx = nx;
-    newfacet->ny = ny;
-    newfacet->nz = nz;
-
-
+    newfacet->n.x = a.y * b.z - a.z * b.y;
+    newfacet->n.y = a.z * b.x - a.x * b.z;
+    newfacet->n.z = a.x * b.y - a.y * b.x;
 
     newfacet->vx[0] = vx0;
     newfacet->vy[0] = vy0;
@@ -283,14 +268,12 @@ output_stl_cube(struct stl_facets *facets, int x,int y, int z, int width, int he
 {
     if ((faces & STL_FACE_TOP) != 0) {
         add_facet(facets, 
-                  create_facet(0        , 1.0       , 0        ,
-                               x        , y + height, z        ,
+                  create_facet(x        , y + height, z        ,
                                x        , y + height, z + depth,
                                x + width, y + height, z));
 
         add_facet(facets, 
-                  create_facet(0        , 1.0       , 0        ,
-                               x        , y + height, z + depth,
+                  create_facet(x        , y + height, z + depth,
                                x + width, y + height, z + depth,
                                x + width, y + height, z));
 
@@ -298,28 +281,24 @@ output_stl_cube(struct stl_facets *facets, int x,int y, int z, int width, int he
 
     if ((faces & STL_FACE_BOT) != 0) {
         add_facet(facets, 
-                  create_facet(0        , -1.0      , 0        ,
-                               x        , y         , z        ,
+                  create_facet(x        , y         , z        ,
                                x + width, y         , z        ,
                                x        , y         , z + depth));
 
         add_facet(facets, 
-                  create_facet(0        , -1.0      , 0        ,
-                               x        , y         , z + depth,
+                  create_facet(x        , y         , z + depth,
                                x + width, y         , z        ,
                                x + width, y         , z + depth));
     }
 
     if ((faces & STL_FACE_FRONT) != 0) {
         add_facet(facets, 
-                  create_facet(0        , 0         , -1.0     ,
-                               x        , y         , z        ,
+                  create_facet(x        , y         , z        ,
                                x        , y + height, z        ,
                                x + width, y         , z        ));
 
         add_facet(facets, 
-                  create_facet(0        , 0         , -1.0     ,
-                               x        , y + height, z        ,
+                  create_facet(x        , y + height, z        ,
                                x + width, y + height, z        ,
                                x + width, y         , z        ));
 
@@ -327,28 +306,24 @@ output_stl_cube(struct stl_facets *facets, int x,int y, int z, int width, int he
 
     if ((faces & STL_FACE_BACK) != 0) {
         add_facet(facets, 
-                  create_facet(0        , 0         , 1.0      ,
-                               x        , y         , z + depth,
+                  create_facet(x        , y         , z + depth,
                                x + width, y         , z + depth,
                                x        , y + height, z + depth));
 
         add_facet(facets, 
-                  create_facet(0        , 0         , 1.0      ,
-                               x        , y + height, z + depth,
+                  create_facet(x        , y + height, z + depth,
                                x + width, y         , z + depth,
                                x + width, y + height, z + depth));
     }
 
     if ((faces & STL_FACE_LEFT) != 0) {
         add_facet(facets, 
-                  create_facet(-1.0     , 0         , 0        ,
-                               x        , y         , z        ,
+                  create_facet(x        , y         , z        ,
                                x        , y         , z + depth,
                                x        , y + height, z        ));
 
         add_facet(facets, 
-                  create_facet(-1.0     , 0         , 0        ,
-                               x        , y + height, z        ,
+                  create_facet(x        , y + height, z        ,
                                x        , y         , z + depth,
                                x        , y + height, z + depth));
 
@@ -356,14 +331,12 @@ output_stl_cube(struct stl_facets *facets, int x,int y, int z, int width, int he
 
     if ((faces & STL_FACE_RIGHT) != 0) {
         add_facet(facets, 
-                  create_facet(1.0      , 0         , 0        ,
-                               x + width, y         , z        ,
+                  create_facet(x + width, y         , z        ,
                                x + width, y + height, z        ,
                                x + width, y         , z + depth));
 
         add_facet(facets, 
-                  create_facet(1.0      , 0         , 0        ,
-                               x + width, y + height, z        ,
+                  create_facet(x + width, y + height, z        ,
                                x + width, y + height, z + depth,
                                x + width, y         , z + depth));
 
