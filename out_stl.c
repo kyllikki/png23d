@@ -28,10 +28,14 @@ struct stl_facet {
     /* normal */
     pnt n;
 
-    /* vertecies */
-    float vx[3];
-    float vy[3];
-    float vz[3];
+    /* triangle vertexes */
+    pnt v[3];
+};
+
+struct stl_facets {
+    struct stl_facet **v; /* array of facets */
+    int count; /* number of valid facets in the array */
+    int facet_alloc; /* numer of facets currently allocated */
 };
 
 static inline void output_stl_tri(const struct stl_facet *facet)
@@ -44,16 +48,10 @@ static inline void output_stl_tri(const struct stl_facet *facet)
            "    endloop\n"
            "  endfacet\n", 
            facet->n.x, facet->n.y, facet->n.z,
-           facet->vx[0],facet->vy[0],facet->vz[0],
-           facet->vx[1],facet->vy[1],facet->vz[1],
-           facet->vx[2],facet->vy[2],facet->vz[2]);
+           facet->v[0].x, facet->v[0].y, facet->v[0].z,
+           facet->v[1].x, facet->v[1].y, facet->v[1].z,
+           facet->v[2].x, facet->v[2].y, facet->v[2].z);
 }
-
-struct stl_facets {
-    struct stl_facet **v; /* array of facets */
-    int count; /* number of valid facets in the array */
-    int facet_alloc; /* numer of facets currently allocated */
-};
 
 static void add_facet(struct stl_facets *facets, struct stl_facet *newfacet)
 {
@@ -95,17 +93,17 @@ create_facet(float vx0,float vy0, float vz0,
     newfacet->n.y = a.z * b.x - a.x * b.z;
     newfacet->n.z = a.x * b.y - a.y * b.x;
 
-    newfacet->vx[0] = vx0;
-    newfacet->vy[0] = vy0;
-    newfacet->vz[0] = vz0;
+    newfacet->v[0].x = vx0;
+    newfacet->v[0].y = vy0;
+    newfacet->v[0].z = vz0;
 
-    newfacet->vx[1] = vx1;
-    newfacet->vy[1] = vy1;
-    newfacet->vz[1] = vz1;
+    newfacet->v[1].x = vx1;
+    newfacet->v[1].y = vy1;
+    newfacet->v[1].z = vz1;
 
-    newfacet->vx[2] = vx2;
-    newfacet->vy[2] = vy2;
-    newfacet->vz[2] = vz2;
+    newfacet->v[2].x = vx2;
+    newfacet->v[2].y = vy2;
+    newfacet->v[2].z = vz2;
 
     return newfacet;
 }
@@ -275,6 +273,16 @@ void stl_gen_facets(struct stl_facets *facets, bitmap *bm, options *options)
 
 }
 
+void free_facets(struct stl_facets *facets)
+{
+    int floop;
+
+    for (floop = 0; floop < facets->count; floop++) {
+        free(*(facets->v + floop));
+    }
+    free(facets->v);
+}
+
 bool output_flat_stl(bitmap *bm, options *options)
 {
     struct stl_facets facets;
@@ -291,6 +299,8 @@ bool output_flat_stl(bitmap *bm, options *options)
     }
 
     printf("endsolid png2stl_Model\n");
+
+    free_facets(&facets);
 
     return true;
 }
@@ -311,6 +321,8 @@ bool output_flat_astl(bitmap *bm, options *options)
     }
 
     printf("endsolid png2stl_Model\n");
+
+    free_facets(&facets);
 
     return true;
 }
