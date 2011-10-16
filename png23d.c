@@ -27,14 +27,14 @@ set_options(int argc, char **argv)
     int opt;
     options *options;
 
-    options = calloc(1, sizeof(options));
+    options = calloc(1, sizeof(struct options));
 
     options->type = OUTPUT_ASTL;
     options->transparent = 128;
     options->levels = 1;
-    options->width = 0;
-    options->height = 0;
-    options->depth = 1;
+    options->width = 0.0;
+    options->height = 0.0;
+    options->depth = 1.0;
 
     while ((opt = getopt(argc, argv, "w:d:h:l:q:t:")) != -1) {
         switch (opt) {
@@ -147,6 +147,8 @@ int main(int argc, char **argv)
         break;
 
     }
+
+    free_bitmap(bm);
 
     if (ret != true) {
         fprintf(stderr, "Error generating output\n");

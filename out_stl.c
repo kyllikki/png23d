@@ -243,23 +243,27 @@ void stl_gen_facets(struct stl_facets *facets, bitmap *bm, options *options)
 {
     int row_loop;
     int col_loop;
+    float scale = options->width / bm->width;
 
-    int xoff; /* x offset so 3d model is centered */
-    int yoff; /* y offset so 3d model is centered */
+    float xoff; /* x offset so 3d model is centered */
+    float yoff; /* y offset so 3d model is centered */
 
     int cubes = 0;
     uint32_t faces;
 
-    xoff = (bm->width / 2);
-    yoff = (bm->height / 2);
+    /*fprintf(stderr,"scale %f options->width %f bm->width %d\n", scale, options->width, bm->width);*/
+
+
+    xoff = (options->width / 2);
+    yoff = ((bm->height * scale) / 2);
 
     for (row_loop = 0; row_loop < bm->height; row_loop++) {
         for (col_loop = 0; col_loop < bm->width; col_loop++) {
             faces = get_stl_face(bm, col_loop, row_loop, options->transparent);
             if (faces != 0) {
                 output_stl_cube(facets, 
-                                col_loop - xoff, yoff - row_loop, 0, 
-                                1.0, 1.0, options->depth, 
+                                (col_loop * scale) - xoff, yoff - (row_loop * scale), 0, 
+                                scale, scale, options->depth, 
                                 faces); 
                 cubes++;
             }

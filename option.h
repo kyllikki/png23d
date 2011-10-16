@@ -13,7 +13,7 @@ typedef struct options {
     unsigned int transparent; /* the grey level value at which object is transparent */
     unsigned int levels; /* the number of levels to quantise into below transparent */
 
-    char *infile; /* input fielname */
+    char *infile; /* input filename */
     char *outfile; /* output filename */
 
     float width; /* the target width */

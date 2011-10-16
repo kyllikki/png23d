@@ -142,3 +142,10 @@ create_bitmap_error:
 
     return bm;
 }
+
+void
+free_bitmap(bitmap *bm)
+{
+    free(bm->data);
+    free(bm);
+}

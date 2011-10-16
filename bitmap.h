@@ -7,3 +7,5 @@ typedef struct bitmap {
 } bitmap;
 
 bitmap *create_bitmap(const char *filename);
+
+void free_bitmap(bitmap *bm);
