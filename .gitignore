@@ -1,0 +1,7 @@
+png23d
+*.o
+*.pgm
+*.png
+*.stl
+*.gcode
+*.scad
