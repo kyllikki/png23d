@@ -6,4 +6,4 @@ typedef struct bitmap {
     uint32_t height; /* height of data */
 } bitmap;
 
-bool create_gs_bitmap(const char *filename, bitmap *bm);
+bitmap *create_bitmap(const char *filename);

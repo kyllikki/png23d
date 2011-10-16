@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "option.h"
 #include "bitmap.h"
 #include "out_stl.h"
 
@@ -110,7 +111,10 @@ create_facet(float vx0,float vy0, float vz0,
 }
 
 static void 
-output_stl_cube(struct stl_facets *facets, int x,int y, int z, int width, int height, int depth, uint32_t faces)
+output_stl_cube(struct stl_facets *facets, 
+                float x, float y, float z, 
+                float width, float height, float depth, 
+                uint32_t faces)
 {
     if ((faces & STL_FACE_TOP) != 0) {
         add_facet(facets, 
@@ -235,7 +239,7 @@ uint32_t get_stl_face(bitmap *bm, int x, int y, uint8_t transparent)
  *   or as this is a simple 2d extrusion perhaps modified marching squares
  *   http://en.wikipedia.org/wiki/Marching_cubes
  */
-void stl_gen_facets(struct stl_facets *facets, bitmap *bm, uint8_t transparent)
+void stl_gen_facets(struct stl_facets *facets, bitmap *bm, options *options)
 {
     int row_loop;
     int col_loop;
@@ -251,9 +255,12 @@ void stl_gen_facets(struct stl_facets *facets, bitmap *bm, uint8_t transparent)
 
     for (row_loop = 0; row_loop < bm->height; row_loop++) {
         for (col_loop = 0; col_loop < bm->width; col_loop++) {
-            faces = get_stl_face(bm, col_loop, row_loop, transparent);
+            faces = get_stl_face(bm, col_loop, row_loop, options->transparent);
             if (faces != 0) {
-                output_stl_cube(facets, col_loop - xoff, yoff - row_loop, 0, 1, 1, 1, faces); 
+                output_stl_cube(facets, 
+                                col_loop - xoff, yoff - row_loop, 0, 
+                                1.0, 1.0, options->depth, 
+                                faces); 
                 cubes++;
             }
         }
@@ -264,14 +271,34 @@ void stl_gen_facets(struct stl_facets *facets, bitmap *bm, uint8_t transparent)
 
 }
 
-bool output_flat_stl(bitmap *bm, uint8_t transparent)
+bool output_flat_stl(bitmap *bm, options *options)
 {
     struct stl_facets facets;
     int floop;
 
     memset(&facets, 0 , sizeof(struct stl_facets));
 
-    stl_gen_facets(&facets, bm, transparent);
+    stl_gen_facets(&facets, bm, options);
+
+    printf("solid png2stl_Model\n");
+
+    for (floop=0; floop < facets.count; floop++) {
+        output_stl_tri(*(facets.v + floop));
+    }
+
+    printf("endsolid png2stl_Model\n");
+
+    return true;
+}
+
+bool output_flat_astl(bitmap *bm, options *options)
+{
+    struct stl_facets facets;
+    int floop;
+
+    memset(&facets, 0 , sizeof(struct stl_facets));
+
+    stl_gen_facets(&facets, bm, options);
 
     printf("solid png2stl_Model\n");
 

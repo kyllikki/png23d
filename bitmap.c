@@ -8,10 +8,9 @@
 
 #include "bitmap.h"
 
-bool
-create_gs_bitmap(const char *filename, bitmap *bm)
+bitmap *
+create_bitmap(const char *filename)
 {
-    bool ret = false;
     int hdr_len = 8;
     FILE *fp; /* input file pointer */
     png_byte header[hdr_len]; /* input firl header bytes to check it is a png */
@@ -28,46 +27,45 @@ create_gs_bitmap(const char *filename, bitmap *bm)
     png_infop end_info; /* png info after decode */
     png_bytep *row_pointers; /* storage for row pointers */
     int row_loop; /* loop to initialise row pointers */
+    bitmap *bm = NULL;
 
     fp = fopen(filename, "rb");
     if (!fp) {
-        return ret;
+        return bm;
     }
 
     if (fread(header, 1, hdr_len, fp) != hdr_len) {
         fclose(fp);
-        return ret;
+        return bm;
     }
 
     if (png_sig_cmp(header, 0, hdr_len) != 0) {
         fclose(fp);
-        return ret;
+        return bm;
     }
 
     png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
     if (!png_ptr) {
         fclose(fp);
-        return ret;
+        return bm;
     }
 
     info_ptr = png_create_info_struct(png_ptr);
     if (!info_ptr)  {
         png_destroy_read_struct(&png_ptr, (png_infopp)NULL, (png_infopp)NULL);
         fclose(fp);
-        return ret;
+        return bm;
     }
 
     end_info = png_create_info_struct(png_ptr);
     if (!end_info) {
         png_destroy_read_struct(&png_ptr, &info_ptr, (png_infopp)NULL);
         fclose(fp);
-        return ret;
+        return bm;
     }
 
     if (setjmp(png_jmpbuf(png_ptr))) {
-        png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
-        fclose(fp);
-        return ret;
+        goto create_bitmap_error;
     }
 
     png_init_io(png_ptr, fp);
@@ -105,16 +103,18 @@ create_gs_bitmap(const char *filename, bitmap *bm)
     channels = png_get_channels(png_ptr, info_ptr);
 
     if (channels != 1) {
-        fclose(fp);
-        return ret;
+        goto create_bitmap_error;
     }
     
+    bm = calloc(1, sizeof(bitmap));
+    if (bm == NULL) {
+        goto create_bitmap_error;
+    }
+
     bm->data = malloc(width *height);
     if (bm->data != NULL) {
         row_pointers = malloc(sizeof(png_bytep) * height);
         if (row_pointers != NULL) {
-            ret = true;
-
             bm->width = width;
             bm->height = height;
 
@@ -129,12 +129,16 @@ create_gs_bitmap(const char *filename, bitmap *bm)
             free(row_pointers);
         } else {
             free(bm->data);
+            free(bm);
+            bm = NULL;
         }
     }
+
+create_bitmap_error:
 
     png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
 
     fclose(fp);
 
-    return ret;
+    return bm;
 }
