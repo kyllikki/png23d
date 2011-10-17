@@ -1,4 +1,16 @@
-/* options */
+/*
+ * Copyright 2011 Vincent Sanders <vince@kyllikki.org>
+ *
+ * Licenced under the MIT License,
+ *                http://www.opensource.org/licenses/mit-license.php
+ *
+ * This file is part of png23d. 
+ * 
+ * output options.
+ */
+
+#ifndef PNG23D_OPTIONS_H
+#define PNG23D_OPTIONS_H 1
 
 enum output_type {
     OUTPUT_PGM,
@@ -21,3 +33,5 @@ typedef struct options {
     float depth; /* the target depth */
 
 } options;
+
+#endif

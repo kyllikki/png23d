@@ -1,6 +1,14 @@
 #!/usr/bin/make
 
-CFLAGS+=-Wall -O2 -g
+WARNFLAGS = -W -Wall -Wundef -Wpointer-arith \
+        -Wcast-align -Wwrite-strings -Wstrict-prototypes \
+        -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls \
+        -Wnested-externs
+ifneq ($(GCCVER),2)
+  WARNFLAGS += -Wno-unused-parameter 
+endif
+
+CFLAGS+=$(WARNFLAGS) -O2 -g
 
 LDFLAGS+=-lpng
 

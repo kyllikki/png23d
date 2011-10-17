@@ -1,10 +1,13 @@
 /* png23d.c
+ *
+ * Copyright 2011 Vincent Sanders <vince@kyllikki.org>
+ *
+ * Licenced under the MIT License,
+ *                http://www.opensource.org/licenses/mit-license.php
+ *
+ * This file is part of png23d. 
  * 
  * convert png to 3d file
- *
- * MIT Licence
- *
- * Copyright 2011 V. R. Sanders 
  */
 
 #include <stdint.h>
@@ -13,6 +16,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #include "option.h"
 
@@ -21,7 +27,7 @@
 #include "out_scad.h"
 #include "out_stl.h"
 
-options *
+static options *
 set_options(int argc, char **argv)
 {
     int opt;
@@ -56,7 +62,7 @@ set_options(int argc, char **argv)
             if (options->transparent > 255) {
                 fprintf(stderr, "transparent level must be between 0 and 255\n");
                 exit(EXIT_FAILURE);
-                
+
             }
             break;
 
@@ -65,7 +71,7 @@ set_options(int argc, char **argv)
             if (options->levels > options->transparent) {
                 fprintf(stderr, "quantisation levels cannot exceed transparent level\n");
                 exit(EXIT_FAILURE);
-                
+
             }
             break;
 
@@ -85,19 +91,23 @@ set_options(int argc, char **argv)
             break;
 
         default: /* '?' */
-            fprintf(stderr, 
-                    "Usage: %s [-l transparent] [-q levels] [-t output type] infile [outfile]\n"
-                    "          -t     output type. One of pgm, scad, stl, astl\n", 
+            fprintf(stderr,
+                    "Usage: %s [-l transparent] [-q levels] [-t output type] infile outfile\n"
+                    "          infile The input file\n"
+                    "          outfile The output file or - for stdout\n"
+                    "          -t     output type. One of pgm, scad, stl, astl\n",
                     argv[0]);
             exit(EXIT_FAILURE);
         }
     }
 
-    if (optind >= argc) {
-        fprintf(stderr, "input file must be specified\n");
+    /* files */
+    if ((optind +1) >= argc) {
+        fprintf(stderr, "input and output files must be specified\n");
             exit(EXIT_FAILURE);
     }
     options->infile = strdup(argv[optind]);
+    options->outfile = strdup(argv[optind + 1]);
 
     return options;
 }
@@ -107,13 +117,32 @@ int main(int argc, char **argv)
     bool ret;
     bitmap *bm;
     options *options;
+    int fd;
 
     options = set_options(argc, argv);
 
+    /* read input */
     bm = create_bitmap(options->infile);
     if (bm == NULL) {
+        fprintf(stderr, "Error creating bitmap\n");
         return EXIT_FAILURE;
     }
+
+    /* open output */
+    if (strcmp(options->outfile, "-") == 0) {
+        fd = STDOUT_FILENO;
+    } else {
+        fd = open(options->outfile, 
+                  O_WRONLY | O_CREAT | O_TRUNC, 
+                  S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
+    }
+
+    if (fd < 0) {
+        fprintf(stderr, "Error opening output\n");
+        free_bitmap(bm);
+        return EXIT_FAILURE;
+    }
+
 
     /* if user did not specify output dimensions assume those from the bitmap */
     if (options->width == 0) {
@@ -124,22 +153,22 @@ int main(int argc, char **argv)
         options->height = bm->height;
     }
 
-
+    /* generate output */
     switch (options->type) {
     case OUTPUT_PGM:
-        ret = output_pgm(bm, options);
+        ret = output_pgm(bm, fd, options);
         break;
 
     case OUTPUT_SCAD:
-        ret = output_flat_scad_cubes(bm, options);
+        ret = output_flat_scad_cubes(bm, fd, options);
         break;
 
     case OUTPUT_STL:
-        ret = output_flat_stl(bm, options);
+        ret = output_flat_stl(bm, fd, options);
         break;
 
     case OUTPUT_ASTL:
-        ret = output_flat_astl(bm, options);
+        ret = output_flat_astl(bm, fd, options);
         break;
 
     default:
@@ -150,9 +179,11 @@ int main(int argc, char **argv)
 
     free_bitmap(bm);
 
+    close(fd);
+
     if (ret != true) {
         fprintf(stderr, "Error generating output\n");
-        return EXIT_FAILURE;        
+        return EXIT_FAILURE;
     }
 
     return 0;

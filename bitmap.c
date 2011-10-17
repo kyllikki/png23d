@@ -1,3 +1,15 @@
+/* bitmap.c
+ *
+ * Copyright 2011 Vincent Sanders <vince@kyllikki.org>
+ *
+ * Licenced under the MIT License,
+ *                http://www.opensource.org/licenses/mit-license.php
+ *
+ * This file is part of png23d. 
+ * 
+ * png to bitmap conversion
+ */
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -11,7 +23,7 @@
 bitmap *
 create_bitmap(const char *filename)
 {
-    int hdr_len = 8;
+    unsigned int hdr_len = 8;
     FILE *fp; /* input file pointer */
     png_byte header[hdr_len]; /* input firl header bytes to check it is a png */
     int bit_depth;
@@ -26,7 +38,7 @@ create_bitmap(const char *filename)
     png_infop info_ptr;/* png information before decode */
     png_infop end_info; /* png info after decode */
     png_bytep *row_pointers; /* storage for row pointers */
-    int row_loop; /* loop to initialise row pointers */
+    unsigned int row_loop; /* loop to initialise row pointers */
     bitmap *bm = NULL;
 
     fp = fopen(filename, "rb");
@@ -118,7 +130,7 @@ create_bitmap(const char *filename)
             bm->width = width;
             bm->height = height;
 
-            for (row_loop = 0; row_loop <height; row_loop++) {
+            for (row_loop = 0; row_loop < height; row_loop++) {
                 *(row_pointers + row_loop) = bm->data + (row_loop * width);
             }
 
