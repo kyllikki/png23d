@@ -245,6 +245,193 @@ output_stl_cube(struct stl_facets *facets,
 
 }
 
+/* generates smoothed facets for a location
+ *
+ * appies marching squares (ish) to generate facets
+ *
+ * @todo make this table driven as a 64 entry switch is out of hand
+ */
+static void
+output_stl_marching_squares(struct stl_facets *facets,
+                float x, float y, float z,
+                float width, float height, float depth,
+                uint32_t faces)
+{
+    switch (faces & 0xf) {
+    case 0: /* empty */
+        break;
+
+    case STL_FACE_LEFT:
+        ADDF(0,0,0, 0,0,1, 0,1,0);
+        ADDF(0,1,0, 0,0,1, 0,1,1);
+        break;
+
+    case STL_FACE_RIGHT:
+        ADDF(1,0,0, 1,1,0, 1,0,1);
+        ADDF(1,1,0, 1,1,1, 1,0,1);
+        break;
+
+    case (STL_FACE_LEFT | STL_FACE_RIGHT) :
+        ADDF(0,0,0, 0,0,1, 0,1,0);
+        ADDF(0,1,0, 0,0,1, 0,1,1);
+
+        ADDF(1,0,0, 1,1,0, 1,0,1);
+        ADDF(1,1,0, 1,1,1, 1,0,1);
+        break;
+
+    case STL_FACE_TOP:
+        ADDF(0,1,0, 0,1,1, 1,1,0);
+        ADDF(0,1,1, 1,1,1, 1,1,0);
+        break;
+
+    case (STL_FACE_TOP | STL_FACE_LEFT):
+        ADDF(0,0,0, 0,0,1, 1,1,0);
+        ADDF(1,1,0, 0,0,1, 1,1,1);
+
+        if ((faces & STL_FACE_FRONT) != 0) {
+            ADDF(0,0,0, 1,1,0, 1,0,0);
+            faces = faces & ~STL_FACE_FRONT;
+        }
+
+        if ((faces & STL_FACE_BACK) != 0) {
+            ADDF(0,0,1, 1,0,1, 1,1,1);
+            faces = faces & ~STL_FACE_BACK;
+        }
+
+        break;
+
+    case (STL_FACE_TOP | STL_FACE_RIGHT):
+        ADDF(1,0,0, 0,1,0, 1,0,1);
+        ADDF(0,1,0, 0,1,1, 1,0,1);
+
+        if ((faces & STL_FACE_FRONT) != 0) {
+            ADDF(1,0,0, 0,0,0, 0,1,0);
+            faces = faces & ~STL_FACE_FRONT;
+        }
+
+        if ((faces & STL_FACE_BACK) != 0) {
+            ADDF(1,0,1, 0,1,1, 0,0,1);
+            faces = faces & ~STL_FACE_BACK;
+        }
+        break;
+
+    case (STL_FACE_TOP | STL_FACE_LEFT | STL_FACE_RIGHT):
+        ADDF(0,1,0, 0,1,1, 1,1,0);
+        ADDF(0,1,1, 1,1,1, 1,1,0);
+
+        ADDF(0,0,0, 0,0,1, 0,1,0);
+        ADDF(0,1,0, 0,0,1, 0,1,1);
+
+        ADDF(1,0,0, 1,1,0, 1,0,1);
+        ADDF(1,1,0, 1,1,1, 1,0,1);
+        break;
+
+    case STL_FACE_BOT:
+        ADDF(0,0,0, 1,0,0, 0,0,1);
+        ADDF(0,0,1, 1,0,0, 1,0,1);
+        break;
+
+    case (STL_FACE_BOT | STL_FACE_LEFT):
+        ADDF(0,1,0, 1,0,0, 1,0,1);
+        ADDF(0,1,0, 1,0,1, 0,1,1);
+
+        if ((faces & STL_FACE_FRONT) != 0) {
+            ADDF(1,0,0, 0,1,0, 1,1,0);
+            faces = faces & ~STL_FACE_FRONT;
+        }
+
+        if ((faces & STL_FACE_BACK) != 0) {
+            ADDF(1,0,1, 1,1,1, 0,1,1);
+            faces = faces & ~STL_FACE_BACK;
+        }
+
+        break;
+
+    case (STL_FACE_BOT | STL_FACE_RIGHT):
+        ADDF(0,0,0, 1,1,0, 0,0,1);
+        ADDF(0,0,1, 1,1,0, 1,1,1);
+
+        if ((faces & STL_FACE_FRONT) != 0) {
+            ADDF(0,0,0, 0,1,0, 1,1,0);
+            faces = faces & ~STL_FACE_FRONT;
+        }
+
+        if ((faces & STL_FACE_BACK) != 0) {
+            ADDF(0,0,1, 1,1,1, 0,1,1);
+            faces = faces & ~STL_FACE_BACK;
+        }
+
+        break;
+
+    case (STL_FACE_BOT | STL_FACE_LEFT | STL_FACE_RIGHT) :
+        ADDF(0,0,0, 1,0,0, 0,0,1);
+        ADDF(0,0,1, 1,0,0, 1,0,1);
+
+        ADDF(0,0,0, 0,0,1, 0,1,0);
+        ADDF(0,1,0, 0,0,1, 0,1,1);
+
+        ADDF(1,0,0, 1,1,0, 1,0,1);
+        ADDF(1,1,0, 1,1,1, 1,0,1);
+        break;
+
+    case (STL_FACE_BOT | STL_FACE_TOP):
+        ADDF(0,0,0, 1,0,0, 0,0,1);
+        ADDF(0,0,1, 1,0,0, 1,0,1);
+
+        ADDF(0,1,0, 0,1,1, 1,1,0);
+        ADDF(0,1,1, 1,1,1, 1,1,0);
+        break;
+
+    case (STL_FACE_BOT | STL_FACE_TOP | STL_FACE_LEFT):
+        ADDF(0,0,0, 1,0,0, 0,0,1);
+        ADDF(0,0,1, 1,0,0, 1,0,1);
+
+        ADDF(0,1,0, 0,1,1, 1,1,0);
+        ADDF(0,1,1, 1,1,1, 1,1,0);
+
+        ADDF(0,0,0, 0,0,1, 0,1,0);
+        ADDF(0,1,0, 0,0,1, 0,1,1);
+        break;
+
+    case (STL_FACE_BOT | STL_FACE_TOP | STL_FACE_RIGHT):
+        ADDF(0,0,0, 1,0,0, 0,0,1);
+        ADDF(0,0,1, 1,0,0, 1,0,1);
+
+        ADDF(0,1,0, 0,1,1, 1,1,0);
+        ADDF(0,1,1, 1,1,1, 1,1,0);
+
+        ADDF(1,0,0, 1,1,0, 1,0,1);
+        ADDF(1,1,0, 1,1,1, 1,0,1);
+        break;
+
+    case (STL_FACE_BOT | STL_FACE_TOP | STL_FACE_LEFT | STL_FACE_RIGHT):
+        ADDF(0,0,0, 1,0,0, 0,0,1);
+        ADDF(0,0,1, 1,0,0, 1,0,1);
+
+        ADDF(0,1,0, 0,1,1, 1,1,0);
+        ADDF(0,1,1, 1,1,1, 1,1,0);
+
+        ADDF(0,0,0, 0,0,1, 0,1,0);
+        ADDF(0,1,0, 0,0,1, 0,1,1);
+
+        ADDF(1,0,0, 1,1,0, 1,0,1);
+        ADDF(1,1,0, 1,1,1, 1,0,1);
+        break;
+
+    }
+
+    if ((faces & STL_FACE_FRONT) != 0) {
+        ADDF(0,0,0, 0,1,0, 1,0,0);
+        ADDF(0,1,0, 1,1,0, 1,0,0);
+    }
+
+    if ((faces & STL_FACE_BACK) != 0) {
+        ADDF(0,0,1, 1,0,1, 0,1,1);
+        ADDF(0,1,1, 1,0,1, 1,1,1);
+    }
+
+}
+
 static uint32_t get_stl_face(bitmap *bm, unsigned int x, unsigned int y, uint8_t transparent)
 {
     uint32_t faces = 0;
@@ -312,10 +499,21 @@ stl_gen_facets(struct stl_facets *facets, bitmap *bm, options *options)
         for (col_loop = 0; col_loop < bm->width; col_loop++) {
             faces = get_stl_face(bm, col_loop, row_loop, options->transparent);
 
-            output_stl_cube(facets,
-                            (col_loop * scale) - xoff, yoff - (row_loop * scale), 0,
-                            scale, scale, options->depth,
-                            faces);
+            if (options->finish == FINISH_RAW) {
+                output_stl_cube(facets,
+                                (col_loop * scale) - xoff,
+                                yoff - (row_loop * scale),
+                                0,
+                                scale, scale, options->depth,
+                                faces);
+            } else {
+                output_stl_marching_squares(facets,
+                                            (col_loop * scale) - xoff,
+                                            yoff - (row_loop * scale),
+                                            0,
+                                            scale, scale, options->depth,
+                                            faces);
+            }
             cubes++;
 
         }
