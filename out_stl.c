@@ -22,12 +22,12 @@
 #include "out_stl.h"
 
 enum stl_faces {
-    STL_FACE_TOP = 1,
-    STL_FACE_BOT = 2,
-    STL_FACE_FRONT = 4,
-    STL_FACE_BACK = 8,
-    STL_FACE_LEFT = 16,
-    STL_FACE_RIGHT = 32,
+    STL_FACE_LEFT = 1,
+    STL_FACE_RIGHT = 2,
+    STL_FACE_TOP = 4,
+    STL_FACE_BOT = 8,
+    STL_FACE_FRONT = 16,
+    STL_FACE_BACK = 32,
 };
 
 /* 3d point */
@@ -105,88 +105,143 @@ create_facet(float vx0,float vy0, float vz0,
     return newfacet;
 }
 
+#define ADDF(xa,ya,za,xb,yb,zb,xc,yc,zc) add_facet(facets, create_facet( \
+    x + (xa * width), y + (ya * height), z + (za * depth), \
+    x + (xb * width), y + (yb * height), z + (zb * depth), \
+    x + (xc * width), y + (yc * height), z + (zc * depth)))
+
+
+/* generates cube facets for a location */
 static void 
 output_stl_cube(struct stl_facets *facets, 
                 float x, float y, float z, 
                 float width, float height, float depth, 
                 uint32_t faces)
 {
-    if ((faces & STL_FACE_TOP) != 0) {
-        add_facet(facets, 
-                  create_facet(x        , y + height, z        ,
-                               x        , y + height, z + depth,
-                               x + width, y + height, z));
+    switch (faces & 0xf) {
+    case 0: /* empty */
+        break;
 
-        add_facet(facets, 
-                  create_facet(x        , y + height, z + depth,
-                               x + width, y + height, z + depth,
-                               x + width, y + height, z));
+    case STL_FACE_LEFT: 
+        ADDF(0,0,0, 0,0,1, 0,1,0);
+        ADDF(0,1,0, 0,0,1, 0,1,1);
+        break;
 
-    }
+    case STL_FACE_RIGHT:
+        ADDF(1,0,0, 1,1,0, 1,0,1);
+        ADDF(1,1,0, 1,1,1, 1,0,1);
+        break;
 
-    if ((faces & STL_FACE_BOT) != 0) {
-        add_facet(facets, 
-                  create_facet(x        , y         , z        ,
-                               x + width, y         , z        ,
-                               x        , y         , z + depth));
+    case (STL_FACE_LEFT | STL_FACE_RIGHT) :
+        ADDF(0,0,0, 0,0,1, 0,1,0);
+        ADDF(0,1,0, 0,0,1, 0,1,1);
+        ADDF(1,0,0, 1,1,0, 1,0,1);
+        ADDF(1,1,0, 1,1,1, 1,0,1);
+        break;
 
-        add_facet(facets, 
-                  create_facet(x        , y         , z + depth,
-                               x + width, y         , z        ,
-                               x + width, y         , z + depth));
+    case STL_FACE_TOP:
+        ADDF(0,1,0, 0,1,1, 1,1,0);
+        ADDF(0,1,1, 1,1,1, 1,1,0);
+        break;
+
+    case (STL_FACE_TOP | STL_FACE_LEFT):
+        ADDF(0,1,0, 0,1,1, 1,1,0);
+        ADDF(0,1,1, 1,1,1, 1,1,0);
+        ADDF(0,0,0, 0,0,1, 0,1,0);
+        ADDF(0,1,0, 0,0,1, 0,1,1);
+        break;
+
+    case (STL_FACE_TOP | STL_FACE_RIGHT):
+        ADDF(0,1,0, 0,1,1, 1,1,0);
+        ADDF(0,1,1, 1,1,1, 1,1,0);
+        ADDF(1,0,0, 1,1,0, 1,0,1);
+        ADDF(1,1,0, 1,1,1, 1,0,1);
+        break;
+
+    case (STL_FACE_TOP | STL_FACE_LEFT | STL_FACE_RIGHT):
+        ADDF(0,1,0, 0,1,1, 1,1,0);
+        ADDF(0,1,1, 1,1,1, 1,1,0);
+        ADDF(0,0,0, 0,0,1, 0,1,0);
+        ADDF(0,1,0, 0,0,1, 0,1,1);
+        ADDF(1,0,0, 1,1,0, 1,0,1);
+        ADDF(1,1,0, 1,1,1, 1,0,1);
+        break;
+
+    case STL_FACE_BOT:
+        ADDF(0,0,0, 1,0,0, 0,0,1);
+        ADDF(0,0,1, 1,0,0, 1,0,1);
+        break;
+
+    case (STL_FACE_BOT | STL_FACE_LEFT): 
+        ADDF(0,0,0, 1,0,0, 0,0,1);
+        ADDF(0,0,1, 1,0,0, 1,0,1);
+        ADDF(0,0,0, 0,0,1, 0,1,0);
+        ADDF(0,1,0, 0,0,1, 0,1,1);
+        break;
+
+    case (STL_FACE_BOT | STL_FACE_RIGHT):
+        ADDF(0,0,0, 1,0,0, 0,0,1);
+        ADDF(0,0,1, 1,0,0, 1,0,1);
+        ADDF(1,0,0, 1,1,0, 1,0,1);
+        ADDF(1,1,0, 1,1,1, 1,0,1);
+        break;
+
+    case (STL_FACE_BOT | STL_FACE_LEFT | STL_FACE_RIGHT) :
+        ADDF(0,0,0, 1,0,0, 0,0,1);
+        ADDF(0,0,1, 1,0,0, 1,0,1);
+        ADDF(0,0,0, 0,0,1, 0,1,0);
+        ADDF(0,1,0, 0,0,1, 0,1,1);
+        ADDF(1,0,0, 1,1,0, 1,0,1);
+        ADDF(1,1,0, 1,1,1, 1,0,1);
+        break;
+
+    case (STL_FACE_BOT | STL_FACE_TOP):
+        ADDF(0,0,0, 1,0,0, 0,0,1);
+        ADDF(0,0,1, 1,0,0, 1,0,1);
+        ADDF(0,1,0, 0,1,1, 1,1,0);
+        ADDF(0,1,1, 1,1,1, 1,1,0);
+        break;
+
+    case (STL_FACE_BOT | STL_FACE_TOP | STL_FACE_LEFT):
+        ADDF(0,0,0, 1,0,0, 0,0,1);
+        ADDF(0,0,1, 1,0,0, 1,0,1);
+        ADDF(0,1,0, 0,1,1, 1,1,0);
+        ADDF(0,1,1, 1,1,1, 1,1,0);
+        ADDF(0,0,0, 0,0,1, 0,1,0);
+        ADDF(0,1,0, 0,0,1, 0,1,1);
+        break;
+
+    case (STL_FACE_BOT | STL_FACE_TOP | STL_FACE_RIGHT):
+        ADDF(0,0,0, 1,0,0, 0,0,1);
+        ADDF(0,0,1, 1,0,0, 1,0,1);
+        ADDF(0,1,0, 0,1,1, 1,1,0);
+        ADDF(0,1,1, 1,1,1, 1,1,0);
+        ADDF(1,0,0, 1,1,0, 1,0,1);
+        ADDF(1,1,0, 1,1,1, 1,0,1);
+        break;
+
+    case (STL_FACE_BOT | STL_FACE_TOP | STL_FACE_LEFT | STL_FACE_RIGHT):
+        ADDF(0,0,0, 1,0,0, 0,0,1);
+        ADDF(0,0,1, 1,0,0, 1,0,1);
+        ADDF(0,1,0, 0,1,1, 1,1,0);
+        ADDF(0,1,1, 1,1,1, 1,1,0);
+        ADDF(0,0,0, 0,0,1, 0,1,0);
+        ADDF(0,1,0, 0,0,1, 0,1,1);
+        ADDF(1,0,0, 1,1,0, 1,0,1);
+        ADDF(1,1,0, 1,1,1, 1,0,1);
+        break;
+
     }
 
     if ((faces & STL_FACE_FRONT) != 0) {
-        add_facet(facets, 
-                  create_facet(x        , y         , z        ,
-                               x        , y + height, z        ,
-                               x + width, y         , z        ));
-
-        add_facet(facets, 
-                  create_facet(x        , y + height, z        ,
-                               x + width, y + height, z        ,
-                               x + width, y         , z        ));
-
+        ADDF(0,0,0, 0,1,0, 1,0,0);
+        ADDF(0,1,0, 1,1,0, 1,0,0);
     }
 
     if ((faces & STL_FACE_BACK) != 0) {
-        add_facet(facets, 
-                  create_facet(x        , y         , z + depth,
-                               x + width, y         , z + depth,
-                               x        , y + height, z + depth));
-
-        add_facet(facets, 
-                  create_facet(x        , y + height, z + depth,
-                               x + width, y         , z + depth,
-                               x + width, y + height, z + depth));
+        ADDF(0,0,1, 1,0,1, 0,1,1);
+        ADDF(0,1,1, 1,0,1, 1,1,1);
     }
-
-    if ((faces & STL_FACE_LEFT) != 0) {
-        add_facet(facets, 
-                  create_facet(x        , y         , z        ,
-                               x        , y         , z + depth,
-                               x        , y + height, z        ));
-
-        add_facet(facets, 
-                  create_facet(x        , y + height, z        ,
-                               x        , y         , z + depth,
-                               x        , y + height, z + depth));
-
-    }
-
-    if ((faces & STL_FACE_RIGHT) != 0) {
-        add_facet(facets, 
-                  create_facet(x + width, y         , z        ,
-                               x + width, y + height, z        ,
-                               x + width, y         , z + depth));
-
-        add_facet(facets, 
-                  create_facet(x + width, y + height, z        ,
-                               x + width, y + height, z + depth,
-                               x + width, y         , z + depth));
-
-    }
-
 
 }
 
