@@ -1,0 +1,110 @@
+.TH png23d 1 "18th October 2011"
+.SH NAME
+png23d - PNG to 3D file conversion
+.SH SYNOPSIS
+.B png23d
+.RB [ \-v ]
+.RB [ \-f
+.IR finish ]
+.RB [ \-t
+.IR type ]
+.RB [ \-l
+.IR level ]
+.RB [ \-q
+.IR quantisation ]
+.RB [ \-w
+.IR width ]
+.RB [ \-h
+.IR height ]
+.RB [ \-d
+.IR depth ]
+infile outfile
+.SH DESCRIPTION
+.PP
+.I png23d
+is a tool which converts a PNG image into a three dimensional file suitable for modelling applications especially for 3D printers.
+.SH "OPTIONS"
+.TP
+.B \-v
+Display the program version and exit.
+.TP
+.B \-l
+The grey level (1 - 255) at which the output is considered transparant (default is 255).
+.TP
+.B \-q
+The number of levels the range below the trsnsparancy level is divided (1 - level) (default is 1). Note that as of version 1.0 only the pgm output type obeys this, all other outputs assume 1.
+.TP
+.B \-w
+The output target width (x dimension)
+.TP
+.B \-h
+The output target height (y dimension). Note most outputs will simply ignore this parameter and retain the original image aspect ratio based on the width parameter.
+.TP
+.B \-d
+The output target depth (z dimension) Efectively the depth of the resulting extrusiuon.
+.TP
+.B \-f
+Specifies the finish out the output 3D mesh the default is \fBraw\fR which keeps all the square edges. The \fBsmooth\fR option gives sloped edges and reduces jaggies on output types that support it.
+.TP
+.B \-t
+Specifies the output type
+.TS
+tab (@);
+l l.
+pgm@T{
+Output a PGM format bitmap. This can be used to verify 
+the level and quantisation parameters are set correctly.
+T}
+scad@T{
+Output a scad format file for use with \fBopenscad\fR. 
+This file will be comprised of a union of cubes. The 
+finish cannot be controlled (it is raw blocks) and the 
+resulting scad object may be very complex.
+T}
+pscad@T{
+Output a scad format file for use with \fBopenscad\fR. 
+This file will be comprised of a single polyhedron mesh. 
+For larger images this polygon will be exceptionally 
+complex and may contain many thousands of triangles.
+T}
+stl@T{
+Output a binary stereolithography format file. 
+These files are comprised of simple triangles, the output 
+can be directly used by several 3D printing systems.
+The genrated meshes are a convex manifold but are not 
+simplified.
+T}
+astl@T{
+Same as teh stl entry but generates a textural file 
+instead of binary.
+T}
+.TE
+
+.TP
+.B infile
+Specifies the source PNG file to convert from.
+.TP
+.B outfile
+Specifies the output file.
+.\".SH "SEE ALSO"
+.\"convert(1)
+.SH AUTHOR
+Copyright \(co 2011 Vincent Sanders
+
+Permission is hereby granted, free of charge, to any person obtaining a copy 
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights 
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell 
+copies of the Software, and to permit persons to whom the Software is 
+furnished to do so, subject to the following conditions: 
+ 
+The above copyright notice and this permission notice shall be included in 
+all copies or substantial portions of the Software. 
+ 
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN 
+THE SOFTWARE. 

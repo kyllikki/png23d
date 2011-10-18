@@ -43,7 +43,7 @@ set_options(int argc, char **argv)
     options->height = 0.0;
     options->depth = 1.0;
 
-    while ((opt = getopt(argc, argv, "f:w:d:h:l:q:t:")) != -1) {
+    while ((opt = getopt(argc, argv, "vf:w:d:h:l:q:t:")) != -1) {
         switch (opt) {
 
         case 'f': /* output finish */
@@ -103,6 +103,10 @@ set_options(int argc, char **argv)
                 exit(EXIT_FAILURE);
             }
             break;
+
+        case 'v':
+                fprintf(stderr, "Version 1.0\n");
+                exit(EXIT_SUCCESS);
 
 
         default: /* '?' */
