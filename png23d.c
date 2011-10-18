@@ -36,14 +36,26 @@ set_options(int argc, char **argv)
     options = calloc(1, sizeof(struct options));
 
     options->type = OUTPUT_ASTL;
+    options->finish = FINISH_RAW;
     options->transparent = 128;
     options->levels = 1;
     options->width = 0.0;
     options->height = 0.0;
     options->depth = 1.0;
 
-    while ((opt = getopt(argc, argv, "w:d:h:l:q:t:")) != -1) {
+    while ((opt = getopt(argc, argv, "f:w:d:h:l:q:t:")) != -1) {
         switch (opt) {
+
+        case 'f': /* output finish */
+            if (strcmp(optarg, "raw") == 0) {
+                options->finish = FINISH_RAW;
+            } else if (strcmp(optarg, "smooth") == 0) {
+                options->finish = FINISH_SMOOTH;
+            } else {
+                fprintf(stderr, "Unknown output finish %s\n", optarg);
+                exit(EXIT_FAILURE);
+            }
+            break;
 
         case 'w': /* output width */
             options->width = strtof(optarg, NULL);
@@ -80,6 +92,8 @@ set_options(int argc, char **argv)
                 options->type = OUTPUT_PGM;
             } else if (strcmp(optarg, "scad") == 0) {
                 options->type = OUTPUT_SCAD;
+            } else if (strcmp(optarg, "pscad") == 0) {
+                options->type = OUTPUT_PSCAD;
             } else if (strcmp(optarg, "stl") == 0) {
                 options->type = OUTPUT_STL;
             } else if (strcmp(optarg, "astl") == 0) {
@@ -89,6 +103,7 @@ set_options(int argc, char **argv)
                 exit(EXIT_FAILURE);
             }
             break;
+
 
         default: /* '?' */
             fprintf(stderr,
@@ -161,6 +176,10 @@ int main(int argc, char **argv)
 
     case OUTPUT_SCAD:
         ret = output_flat_scad_cubes(bm, fd, options);
+        break;
+
+    case OUTPUT_PSCAD:
+        ret = output_flat_scad_polyhedron(bm, fd, options);
         break;
 
     case OUTPUT_STL:

@@ -12,7 +12,7 @@ CFLAGS+=$(WARNFLAGS) -O2 -g
 
 LDFLAGS+=-lpng
 
-PNG23D-OBJ=png23d.o bitmap.o out_pgm.o out_scad.o out_stl.o
+PNG23D-OBJ=png23d.o bitmap.o mesh.o out_pgm.o out_scad.o out_pscad.o out_stl.o
 
 .PHONY : all clean
 

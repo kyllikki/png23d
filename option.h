@@ -15,12 +15,20 @@
 enum output_type {
     OUTPUT_PGM,
     OUTPUT_SCAD,
+    OUTPUT_PSCAD,
     OUTPUT_STL,
     OUTPUT_ASTL,
 };
 
+enum output_finish {
+    FINISH_RAW,
+    FINISH_SMOOTH,
+};
+
 typedef struct options {
     enum output_type type; /* the type of output to produce */
+
+    enum output_finish finish;
 
     unsigned int transparent; /* the grey level value at which object is transparent */
     unsigned int levels; /* the number of levels to quantise into below transparent */
