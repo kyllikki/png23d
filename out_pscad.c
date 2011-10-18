@@ -6,7 +6,7 @@
  *
  * This file is part of png23d.
  *
- * Routines to output in STL format
+ * Routines to output in scad polyhedron format
  */
 
 #include <stdint.h>
@@ -22,27 +22,14 @@
 #include "mesh.h"
 #include "out_pscad.h"
 
-static inline void output_stl_tri(FILE *outf, const struct facet *facet)
-{
-    fprintf(outf,
-            "  facet normal %.6f %.6f %.6f\n"
-            "    outer loop\n"
-            "      vertex %.6f %.6f %.6f\n"
-            "      vertex %.6f %.6f %.6f\n"
-            "      vertex %.6f %.6f %.6f\n"
-            "    endloop\n"
-            "  endfacet\n",
-            facet->n.x, facet->n.y, facet->n.z,
-            facet->v[0].x, facet->v[0].y, facet->v[0].z,
-            facet->v[1].x, facet->v[1].y, facet->v[1].z,
-            facet->v[2].x, facet->v[2].y, facet->v[2].z);
-}
 
 /* ascii stl outout */
 bool output_flat_scad_polyhedron(bitmap *bm, int fd, options *options)
 {
     struct facets *facets;
-    unsigned int floop;
+    struct idxlist *idxlist;
+    unsigned int ploop;
+    unsigned int tloop;
     FILE *outf;
 
     outf = fdopen(dup(fd), "w");
@@ -53,15 +40,26 @@ bool output_flat_scad_polyhedron(bitmap *bm, int fd, options *options)
         return false;
     }
 
-    fprintf(stderr, "cubes %d facets %d\n", facets->cubes, facets->count);
+    idxlist = gen_idxlist(facets);
 
-    fprintf(outf, "solid png2stl_Model\n");
+    /* fprintf(stderr, "cubes %d facets %d vertexes %u\n", facets->cubes, facets->count, idxlist->pcount); */
 
-    for (floop = 0; floop < facets->count; floop++) {
-        output_stl_tri(outf, *(facets->v + floop));
+    fprintf(outf, "polyhedron(points = [\n");
+
+    for (ploop = 0; ploop < idxlist->pcount; ploop++) {
+        struct pnt *pnt;
+        pnt = *(idxlist->p + ploop);
+        fprintf(outf, "[%f,%f,%f],\n", pnt->x, pnt->y, pnt->z);
     }
 
-    fprintf(outf, "endsolid png2stl_Model\n");
+    fprintf(outf, "], triangles = [\n");
+
+    for (tloop = 0; tloop < idxlist->tcount; tloop++) {
+        fprintf(outf, "[%u,%u,%u],\n", idxlist->t[tloop].v[0], idxlist->t[tloop].v[1], idxlist->t[tloop].v[2] );
+    }
+
+
+    fprintf(outf, "]);");
 
     free_facets(facets);
 
