@@ -25,6 +25,7 @@
 #include "bitmap.h"
 #include "out_pgm.h"
 #include "out_scad.h"
+#include "out_pscad.h"
 #include "out_stl.h"
 
 static options *
