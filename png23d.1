@@ -18,7 +18,7 @@ png23d - PNG to 3D file conversion
 .IR height ]
 .RB [ \-d
 .IR depth ]
-infile outfile
+input output
 .SH DESCRIPTION
 .PP
 .I png23d
@@ -29,10 +29,10 @@ is a tool which converts a PNG image into a three dimensional file suitable for 
 Display the program version and exit.
 .TP
 .B \-l
-The grey level (1 - 255) at which the output is considered transparant (default is 255).
+The grey level (1 - 255) at which the output is considered transparent (default is 255).
 .TP
 .B \-q
-The number of levels the range below the trsnsparancy level is divided (1 - level) (default is 1). Note that as of version 1.0 only the pgm output type obeys this, all other outputs assume 1.
+The number of levels the range below the transparency level is divided (1 - level) (default is 1). Note that as of version 1.0 only the pgm output type obeys this, all other outputs assume 1.
 .TP
 .B \-w
 The output target width (x dimension)
@@ -41,7 +41,7 @@ The output target width (x dimension)
 The output target height (y dimension). Note most outputs will simply ignore this parameter and retain the original image aspect ratio based on the width parameter.
 .TP
 .B \-d
-The output target depth (z dimension) Efectively the depth of the resulting extrusiuon.
+The output target depth (z dimension) Effectively the depth of the resulting extrusion.
 .TP
 .B \-f
 Specifies the finish out the output 3D mesh the default is \fBraw\fR which keeps all the square edges. The \fBsmooth\fR option gives sloped edges and reduces jaggies on output types that support it.
@@ -50,7 +50,7 @@ Specifies the finish out the output 3D mesh the default is \fBraw\fR which keeps
 Specifies the output type
 .TS
 tab (@);
-l l.
+l lx.
 pgm@T{
 Output a PGM format bitmap. This can be used to verify 
 the level and quantisation parameters are set correctly.
@@ -71,21 +71,46 @@ stl@T{
 Output a binary stereolithography format file. 
 These files are comprised of simple triangles, the output 
 can be directly used by several 3D printing systems.
-The genrated meshes are a convex manifold but are not 
+The generated meshes are a convex manifold but are not 
 simplified.
 T}
 astl@T{
-Same as teh stl entry but generates a textural file 
+Same as the stl entry but generates a textural file 
 instead of binary.
 T}
 .TE
-
+.PP
 .TP
-.B infile
+.B input
 Specifies the source PNG file to convert from.
 .TP
-.B outfile
+.B output
 Specifies the output file.
+.SH EXAMPLES
+.PP
+To convert from 
+.I foo.png
+to 
+.I foo.scad
+in scad polyhedron output format:
+.IP
+png23d -t pscad foo.png foo.scad
+.PP
+To convert from 
+.I foo.png
+to 
+.I foo.stl
+in binary STL output format with smooth finish:
+.IP
+png23d -f smooth -t stl foo.png foo.scad
+.PP
+To convert from 
+.I foo.png
+to 
+.I foo.stl
+in ascii STL output format with smooth finish and 50 unit output width:
+.IP
+png23d -f smooth -t astl -w 50 foo.png foo.scad
 .\".SH "SEE ALSO"
 .\"convert(1)
 .SH AUTHOR
