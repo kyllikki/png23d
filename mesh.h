@@ -19,37 +19,34 @@ typedef struct pnt {
     float z;
 } pnt;
 
+
+/* an indexed point */
+typedef uint32_t idxpnt;
+
 /** facet
  *
  * A facet is a triangle with its normal 
  */
 struct facet {
     pnt n; /**< surface normal */
-    pnt v[3]; /**< triangle vertexes */
+    pnt v[3]; /**< triangle vertices */
+    idxpnt i[3]; /** triangle indexed vertices */
 };
 
 struct facets {
-    struct facet *v; /* array of facets */
-    uint32_t count; /* number of valid facets in the array */
-    uint32_t facet_alloc; /* numer of facets currently allocated */
+    /* facets */
+    struct facet *f; /**< array of facets */
+    uint32_t fcount; /**< number of valid facets in the array */
+    uint32_t falloc; /**< numer of facets currently allocated */
+
+    /* indexed points */
+    struct pnt **p; /* array of points */
+    uint32_t pcount; /* number of valid points in the array */
+    uint32_t palloc; /* numer of points currently allocated */
     
     uint32_t cubes; /* number of cubes with at lease one face */
 };
 
-struct idxtri {
-    uint32_t v[3];
-};
-
-struct idxlist {
-    struct pnt **p; /* array of points */
-    uint32_t pcount; /* number of valid points in the array */
-    uint32_t palloc; /* numer of points currently allocated */
-
-    struct idxtri *t; /* array of indexed triangles */
-    uint32_t tcount; /* number of valid tri in the array */
-    uint32_t talloc; /* numer of tri currently allocated */
-    
-};
 
 /** Generate list of triangle facets from a bitmap
  *
@@ -57,6 +54,8 @@ struct idxlist {
  */
 struct facets *gen_facets(bitmap *bm, options *options);
 void free_facets(struct facets *facets);
-struct idxlist *gen_idxlist(struct facets *facets);
+
+/* update the geometry with index representation */
+bool update_indexing(struct facets *facets);
 
 #endif

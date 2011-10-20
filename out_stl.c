@@ -52,7 +52,7 @@ bool output_flat_stl(bitmap *bm, int fd, options *options)
         return false;
     }
 
-    fprintf(stderr, "cubes %d facets %d\n", facets->cubes, facets->count);
+    fprintf(stderr, "cubes %d facets %d\n", facets->cubes, facets->fcount);
 
     memset(header, 0, 80);
 
@@ -63,13 +63,13 @@ bool output_flat_stl(bitmap *bm, int fd, options *options)
         goto output_flat_stl_error;
     }
 
-    if (write(fd, &facets->count, sizeof(uint32_t)) != sizeof(uint32_t)) {
+    if (write(fd, &facets->fcount, sizeof(uint32_t)) != sizeof(uint32_t)) {
         ret = false;
         goto output_flat_stl_error;
     }
 
-    for (floop=0; floop < facets->count; floop++) {
-        if (write(fd, facets->v + floop,
+    for (floop=0; floop < facets->fcount; floop++) {
+        if (write(fd, facets->f + floop,
                   sizeof(struct facet)) != sizeof(struct facet)) {
             ret = false;
             break;
@@ -118,12 +118,12 @@ bool output_flat_astl(bitmap *bm, int fd, options *options)
         return false;
     }
 
-    fprintf(stderr, "cubes %d facets %d\n", facets->cubes, facets->count);
+    fprintf(stderr, "cubes %d facets %d\n", facets->cubes, facets->fcount);
 
     fprintf(outf, "solid png2stl_Model\n");
 
-    for (floop = 0; floop < facets->count; floop++) {
-        output_stl_tri(outf, facets->v + floop);
+    for (floop = 0; floop < facets->fcount; floop++) {
+        output_stl_tri(outf, facets->f + floop);
     }
 
     fprintf(outf, "endsolid png2stl_Model\n");

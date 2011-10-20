@@ -30,7 +30,7 @@ enum faces {
     FACE_BACK = 32,
 };
 
-static void add_facet(struct facets *facets, 
+static void add_facet(struct facets *facets,
                       float vx0,float vy0, float vz0,
                       float vx1,float vy1, float vz1,
                       float vx2,float vy2, float vz2)
@@ -39,14 +39,14 @@ static void add_facet(struct facets *facets,
     pnt a;
     pnt b;
 
-    if ((facets->count + 1) > facets->facet_alloc) {
+    if ((facets->fcount + 1) > facets->falloc) {
         /* array needs extending */
-        facets->v = realloc(facets->v, (facets->facet_alloc + 1000) * sizeof(struct facet));
-        facets->facet_alloc += 1000;
+        facets->f = realloc(facets->f, (facets->falloc + 1000) * sizeof(struct facet));
+        facets->falloc += 1000;
     }
 
-    newfacet = facets->v + facets->count;
-    facets->count++;
+    newfacet = facets->f + facets->fcount;
+    facets->fcount++;
 
     /* normal calculation
      * va = v1 - v0
@@ -414,7 +414,7 @@ output_marching_squares(struct facets *facets,
 
 }
 
-static uint32_t 
+static uint32_t
 get_face(bitmap *bm, unsigned int x, unsigned int y, uint8_t transparent)
 {
     uint32_t faces = 0;
@@ -508,71 +508,55 @@ gen_facets(bitmap *bm, options *options)
 
 void free_facets(struct facets *facets)
 {
-    free(facets->v);
+    free(facets->f);
 }
 
-static uint32_t find_pnt(struct idxlist *idxlist, struct pnt *pnt)
+static uint32_t find_pnt(struct facets *facets, struct pnt *pnt)
 {
     uint32_t idx;
-    for (idx = 0; idx < idxlist->pcount; idx++) {
-        if (((*(idxlist->p + idx))->x == pnt->x) &&
-            ((*(idxlist->p + idx))->y == pnt->y) &&
-            ((*(idxlist->p + idx))->z == pnt->z)) {
+    for (idx = 0; idx < facets->pcount; idx++) {
+        if (((*(facets->p + idx))->x == pnt->x) &&
+            ((*(facets->p + idx))->y == pnt->y) &&
+            ((*(facets->p + idx))->z == pnt->z)) {
             break;
         }
-            
+
     }
     return idx;
 }
 
-static uint32_t add_pnt(struct idxlist *idxlist, struct pnt *npnt)
+static idxpnt add_pnt(struct facets *facets, struct pnt *npnt)
 {
     uint32_t idx;
 
-    idx = find_pnt(idxlist, npnt);
-    if (idx == idxlist->pcount) {
+    idx = find_pnt(facets, npnt);
+    if (idx == facets->pcount) {
         /* not in array already */
-        if ((idxlist->pcount + 1) > idxlist->palloc) {
+        if ((facets->pcount + 1) > facets->palloc) {
             /* pnt array needs extending */
-            idxlist->p = realloc(idxlist->p, (idxlist->palloc + 1000) * sizeof(struct pnt *));
-            idxlist->palloc += 1000;
+            facets->p = realloc(facets->p,
+                                 (facets->palloc + 1000) * sizeof(struct pnt *));
+            facets->palloc += 1000;
         }
 
-        *(idxlist->p + idxlist->pcount) = npnt;
-        idxlist->pcount++;
+        *(facets->p + facets->pcount) = npnt;
+        facets->pcount++;
     }
     return idx;
 }
 
-static void add_tri(struct idxlist *idxlist, struct idxtri *ntri)
-{
-    if ((idxlist->tcount + 1) > idxlist->talloc) {
-        /* array needs extending */
-        idxlist->t = realloc(idxlist->t, (idxlist->talloc + 1000) * sizeof(struct idxtri));
-        idxlist->talloc += 1000;
-    }
-    idxlist->t[idxlist->tcount] = *ntri;
-    idxlist->tcount++;
-}
-
-struct idxlist *
-gen_idxlist(struct facets *facets)
+bool
+update_indexing(struct facets *facets)
 {
     unsigned int floop;
-    struct idxlist *idxlist;
-    struct idxtri tri;
 
-    idxlist = calloc(1, sizeof(struct idxlist));
-    if (idxlist == NULL) {
-        return idxlist;
+    /* manufacture pointlist and update indexed geometry */
+    for (floop = 0; floop < facets->fcount; floop++) {
+        /* update facet with indexed points */
+        facets->f[floop].i[0] = add_pnt(facets, &facets->f[floop].v[0]);
+        facets->f[floop].i[1] = add_pnt(facets, &facets->f[floop].v[1]);
+        facets->f[floop].i[2] = add_pnt(facets, &facets->f[floop].v[2]);
     }
 
-    for (floop = 0; floop < facets->count; floop++) {
-        tri.v[0] = add_pnt(idxlist, &facets->v[floop].v[0]);
-        tri.v[1] = add_pnt(idxlist, &facets->v[floop].v[1]);
-        tri.v[2] = add_pnt(idxlist, &facets->v[floop].v[2]);
-        add_tri(idxlist, &tri);
-    }
-
-    return idxlist;
+    return true;;
 }

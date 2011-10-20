@@ -27,9 +27,8 @@
 bool output_flat_scad_polyhedron(bitmap *bm, int fd, options *options)
 {
     struct facets *facets;
-    struct idxlist *idxlist;
     unsigned int ploop;
-    unsigned int tloop;
+    unsigned int tloop; /* triangle loop */
     FILE *outf;
 
     outf = fdopen(dup(fd), "w");
@@ -40,22 +39,25 @@ bool output_flat_scad_polyhedron(bitmap *bm, int fd, options *options)
         return false;
     }
 
-    idxlist = gen_idxlist(facets);
+    update_indexing(facets);
 
-    /* fprintf(stderr, "cubes %d facets %d vertexes %u\n", facets->cubes, facets->count, idxlist->pcount); */
+    /* fprintf(stderr, "cubes %d facets %d vertexes %u\n", facets->cubes, facets->count, facets->pcount); */
 
     fprintf(outf, "polyhedron(points = [\n");
 
-    for (ploop = 0; ploop < idxlist->pcount; ploop++) {
+    for (ploop = 0; ploop < facets->pcount; ploop++) {
         struct pnt *pnt;
-        pnt = *(idxlist->p + ploop);
+        pnt = *(facets->p + ploop);
         fprintf(outf, "[%f,%f,%f],\n", pnt->x, pnt->y, pnt->z);
     }
 
     fprintf(outf, "], triangles = [\n");
 
-    for (tloop = 0; tloop < idxlist->tcount; tloop++) {
-        fprintf(outf, "[%u,%u,%u],\n", idxlist->t[tloop].v[0], idxlist->t[tloop].v[1], idxlist->t[tloop].v[2] );
+    for (tloop = 0; tloop < facets->fcount; tloop++) {
+        fprintf(outf, "[%u,%u,%u],\n",
+                facets->f[tloop].i[0],
+                facets->f[tloop].i[1],
+                facets->f[tloop].i[2] );
     }
 
 
