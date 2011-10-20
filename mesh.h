@@ -26,11 +26,10 @@ typedef struct pnt {
 struct facet {
     pnt n; /**< surface normal */
     pnt v[3]; /**< triangle vertexes */
-    uint16_t attribute;
-} __attribute__((packed));
+};
 
 struct facets {
-    struct facet **v; /* array of facets */
+    struct facet *v; /* array of facets */
     uint32_t count; /* number of valid facets in the array */
     uint32_t facet_alloc; /* numer of facets currently allocated */
     
@@ -45,6 +44,7 @@ struct idxlist {
     struct pnt **p; /* array of points */
     uint32_t pcount; /* number of valid points in the array */
     uint32_t palloc; /* numer of points currently allocated */
+
     struct idxtri *t; /* array of indexed triangles */
     uint32_t tcount; /* number of valid tri in the array */
     uint32_t talloc; /* numer of tri currently allocated */

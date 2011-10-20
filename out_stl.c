@@ -42,8 +42,9 @@ bool output_flat_stl(bitmap *bm, int fd, options *options)
     unsigned int floop;
     uint8_t header[80];
     bool ret = true;
+    uint16_t attributes = 0;
 
-    assert(sizeof(struct facet) == 50); /* this is foul and nasty */
+    assert(sizeof(struct facet) == 48); /* this is foul and nasty */
 
     facets = gen_facets(bm, options);
     if (facets == NULL) {
@@ -68,8 +69,13 @@ bool output_flat_stl(bitmap *bm, int fd, options *options)
     }
 
     for (floop=0; floop < facets->count; floop++) {
-        if (write(fd, *(facets->v + floop),
+        if (write(fd, facets->v + floop,
                   sizeof(struct facet)) != sizeof(struct facet)) {
+            ret = false;
+            break;
+        }
+        if (write(fd, &attributes,
+                  sizeof(attributes)) != sizeof(attributes)) {
             ret = false;
             break;
         }
@@ -117,7 +123,7 @@ bool output_flat_astl(bitmap *bm, int fd, options *options)
     fprintf(outf, "solid png2stl_Model\n");
 
     for (floop = 0; floop < facets->count; floop++) {
-        output_stl_tri(outf, *(facets->v + floop));
+        output_stl_tri(outf, facets->v + floop);
     }
 
     fprintf(outf, "endsolid png2stl_Model\n");

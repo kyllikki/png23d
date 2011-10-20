@@ -30,28 +30,23 @@ enum faces {
     FACE_BACK = 32,
 };
 
-static void add_facet(struct facets *facets, struct facet *newfacet)
+static void add_facet(struct facets *facets, 
+                      float vx0,float vy0, float vz0,
+                      float vx1,float vy1, float vz1,
+                      float vx2,float vy2, float vz2)
 {
-    if ((facets->count + 1) > facets->facet_alloc) {
-        /* array needs extending */
-        facets->v = realloc(facets->v, (facets->facet_alloc + 1000) * sizeof(struct facet *));
-        facets->facet_alloc += 1000;
-    }
-    *(facets->v + facets->count) = newfacet;
-    facets->count++;
-}
-
-
-static inline struct facet *
-create_facet(float vx0,float vy0, float vz0,
-             float vx1,float vy1, float vz1,
-             float vx2,float vy2, float vz2)
-{
+    struct facet *newfacet;
     pnt a;
     pnt b;
-    struct facet *newfacet;
 
-    newfacet = malloc(sizeof(struct facet));
+    if ((facets->count + 1) > facets->facet_alloc) {
+        /* array needs extending */
+        facets->v = realloc(facets->v, (facets->facet_alloc + 1000) * sizeof(struct facet));
+        facets->facet_alloc += 1000;
+    }
+
+    newfacet = facets->v + facets->count;
+    facets->count++;
 
     /* normal calculation
      * va = v1 - v0
@@ -82,14 +77,12 @@ create_facet(float vx0,float vy0, float vz0,
     newfacet->v[2].x = vx2;
     newfacet->v[2].y = vy2;
     newfacet->v[2].z = vz2;
-
-    return newfacet;
 }
 
-#define ADDF(xa,ya,za,xb,yb,zb,xc,yc,zc) add_facet(facets, create_facet( \
+#define ADDF(xa,ya,za,xb,yb,zb,xc,yc,zc) add_facet(facets, \
     x + (xa * width), y + (ya * height), z + (za * depth), \
     x + (xb * width), y + (yb * height), z + (zb * depth), \
-    x + (xc * width), y + (yc * height), z + (zc * depth)))
+    x + (xc * width), y + (yc * height), z + (zc * depth))
 
 
 /* generates cube facets for a location */
@@ -515,11 +508,6 @@ gen_facets(bitmap *bm, options *options)
 
 void free_facets(struct facets *facets)
 {
-    unsigned int floop;
-
-    for (floop = 0; floop < facets->count; floop++) {
-        free(*(facets->v + floop));
-    }
     free(facets->v);
 }
 
@@ -580,9 +568,9 @@ gen_idxlist(struct facets *facets)
     }
 
     for (floop = 0; floop < facets->count; floop++) {
-        tri.v[0] = add_pnt(idxlist, &(*(facets->v + floop))->v[0]);
-        tri.v[1] = add_pnt(idxlist, &(*(facets->v + floop))->v[1]);
-        tri.v[2] = add_pnt(idxlist, &(*(facets->v + floop))->v[2]);
+        tri.v[0] = add_pnt(idxlist, &facets->v[floop].v[0]);
+        tri.v[1] = add_pnt(idxlist, &facets->v[floop].v[1]);
+        tri.v[2] = add_pnt(idxlist, &facets->v[floop].v[2]);
         add_tri(idxlist, &tri);
     }
 
