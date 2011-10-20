@@ -1,5 +1,6 @@
 png23d
 *.o
+*.d
 *.pgm
 *.png
 *.stl
