@@ -12,6 +12,8 @@
 #ifndef PNG23D_MESH_H
 #define PNG23D_MESH_H 1
 
+#define FACETPNT_CNT 16
+
 /* 3d point */
 typedef struct pnt {
     float x;
@@ -33,6 +35,12 @@ struct facet {
     idxpnt i[3]; /** triangle indexed vertices */
 };
 
+struct vertex {
+    struct pnt *p; /* the location of this vertex */
+    unsigned int fcount; /* the number of facets that use this vertex */
+    struct facet *facets[FACETPNT_CNT]; /* facets that use this vertex */
+};
+
 struct facets {
     /* facets */
     struct facet *f; /**< array of facets */
@@ -40,9 +48,9 @@ struct facets {
     uint32_t falloc; /**< numer of facets currently allocated */
 
     /* indexed points */
-    struct pnt **p; /* array of points */
-    uint32_t pcount; /* number of valid points in the array */
-    uint32_t palloc; /* numer of points currently allocated */
+    struct vertex *p; /* array of verticies */
+    uint32_t pcount; /* number of valid verticies in the array */
+    uint32_t palloc; /* numer of verticies currently allocated */
     
     uint32_t cubes; /* number of cubes with at lease one face */
 };
@@ -57,5 +65,8 @@ void free_facets(struct facets *facets);
 
 /* update the geometry with index representation */
 bool update_indexing(struct facets *facets);
+
+/* remove uneccessary verticies */
+bool simplify_mesh(struct facets *facets);
 
 #endif

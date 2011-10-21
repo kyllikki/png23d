@@ -41,13 +41,15 @@ bool output_flat_scad_polyhedron(bitmap *bm, int fd, options *options)
 
     update_indexing(facets);
 
+    simplify_mesh(facets);
+
     /* fprintf(stderr, "cubes %d facets %d vertexes %u\n", facets->cubes, facets->count, facets->pcount); */
 
     fprintf(outf, "polyhedron(points = [\n");
 
     for (ploop = 0; ploop < facets->pcount; ploop++) {
         struct pnt *pnt;
-        pnt = *(facets->p + ploop);
+        pnt = facets->p[ploop].p;
         fprintf(outf, "[%f,%f,%f],\n", pnt->x, pnt->y, pnt->z);
     }
 

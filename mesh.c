@@ -515,9 +515,9 @@ static uint32_t find_pnt(struct facets *facets, struct pnt *pnt)
 {
     uint32_t idx;
     for (idx = 0; idx < facets->pcount; idx++) {
-        if (((*(facets->p + idx))->x == pnt->x) &&
-            ((*(facets->p + idx))->y == pnt->y) &&
-            ((*(facets->p + idx))->z == pnt->z)) {
+        if ((facets->p[idx].p->x == pnt->x) &&
+            (facets->p[idx].p->y == pnt->y) &&
+            (facets->p[idx].p->z == pnt->z)) {
             break;
         }
 
@@ -535,11 +535,13 @@ static idxpnt add_pnt(struct facets *facets, struct pnt *npnt)
         if ((facets->pcount + 1) > facets->palloc) {
             /* pnt array needs extending */
             facets->p = realloc(facets->p,
-                                 (facets->palloc + 1000) * sizeof(struct pnt *));
+                                (facets->palloc + 1000) *
+                                sizeof(struct vertex));
             facets->palloc += 1000;
         }
 
-        *(facets->p + facets->pcount) = npnt;
+        facets->p[facets->pcount].p = npnt;
+        facets->p[facets->pcount].fcount = 0;
         facets->pcount++;
     }
     return idx;
@@ -552,11 +554,111 @@ update_indexing(struct facets *facets)
 
     /* manufacture pointlist and update indexed geometry */
     for (floop = 0; floop < facets->fcount; floop++) {
+        idxpnt p0, p1, p2;
         /* update facet with indexed points */
-        facets->f[floop].i[0] = add_pnt(facets, &facets->f[floop].v[0]);
-        facets->f[floop].i[1] = add_pnt(facets, &facets->f[floop].v[1]);
-        facets->f[floop].i[2] = add_pnt(facets, &facets->f[floop].v[2]);
+        p0 = facets->f[floop].i[0] = add_pnt(facets, &facets->f[floop].v[0]);
+        p1 = facets->f[floop].i[1] = add_pnt(facets, &facets->f[floop].v[1]);
+        p2 = facets->f[floop].i[2] = add_pnt(facets, &facets->f[floop].v[2]);
+
+        facets->p[p0].facets[facets->p[p0].fcount++] = &facets->f[floop];
+        facets->p[p1].facets[facets->p[p1].fcount++] = &facets->f[floop];
+        facets->p[p2].facets[facets->p[p2].fcount++] = &facets->f[floop];
     }
 
     return true;;
+}
+
+/* are points the same value */
+static inline bool eqpnt(struct pnt *p0, struct pnt *p1)
+{
+    if ((p0->x == p1->x) && (p0->y == p1->y) && (p0->z == p1->z)) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+/* do points differ */
+static inline bool nepnt(struct pnt *p0, struct pnt *p1)
+{
+    if ((p0->x != p1->x) || (p0->y != p1->y) || (p0->z != p1->z)) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+/* determinae if a vertex is a removal candidate */
+static bool is_candidate(struct vertex *vtx)
+{
+    unsigned int floop; /* facet loop */
+
+    /* walk the normals to check tehy are all the same */
+    for (floop = 1; floop < vtx->fcount; floop++) {
+        if (nepnt(&vtx->facets[floop - 1]->n, &vtx->facets[floop]->n))
+            return false;
+    }
+
+    return true;
+}
+
+static bool
+check_adjacent(struct facets *facets, unsigned int ivtx, unsigned int *avtx)
+{
+    unsigned int floop; /* facet loop */
+    unsigned int vloop; /* vertex within facets */
+    struct vertex *vtx = facets->p + ivtx; /* initial vertex */
+
+    for (floop = 0; floop < vtx->fcount; floop++) {
+        for (vloop = 0; vloop < 3; vloop++) {
+            if (vtx->facets[floop]->i[vloop] == ivtx) {
+                continue; /* skip given vertex */
+            }
+            if (is_candidate(facets->p + vtx->facets[floop]->i[vloop])) {
+                *avtx = vtx->facets[floop]->i[vloop];
+                return true;
+            }
+
+        }
+    }
+    return false; /* no match */
+}
+
+
+static bool
+merge_vertex(unsigned int ivtx0, unsigned int ivtx1)
+{
+    fprintf(stderr,"remove edge %u,%u\n", ivtx0, ivtx1);
+    return false;
+}
+
+/* simplify mesh by edge removal
+*
+* algorithm is:
+* find vertex where all facets have the same normal
+* search each vertex of each attached facet for one where all its facets have teh same normal
+* merge second vertex into first
+* delete degenerate facets(two of their vertecies will be the same
+*/
+bool
+simplify_mesh(struct facets *facets)
+{
+    unsigned int vloop;
+    unsigned int vtx1;
+
+    /* ensure index tables ar eup to date */
+    if (facets->p == NULL) {
+        update_indexing(facets);
+    }
+
+    for (vloop = 0; vloop < facets->pcount; vloop++) {
+        if (is_candidate(facets->p + vloop)) {
+            /* check adjacent vertecies */
+            if (check_adjacent(facets, vloop, &vtx1)) {
+                /* collapse verticies */
+                merge_vertex(vloop, vtx1);
+            }
+        }
+    }
+    return true;
 }

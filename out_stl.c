@@ -118,6 +118,8 @@ bool output_flat_astl(bitmap *bm, int fd, options *options)
         return false;
     }
 
+    simplify_mesh(facets);
+
     fprintf(stderr, "cubes %d facets %d\n", facets->cubes, facets->fcount);
 
     fprintf(outf, "solid png2stl_Model\n");
