@@ -26,46 +26,46 @@
 /* ascii stl outout */
 bool output_flat_scad_polyhedron(bitmap *bm, int fd, options *options)
 {
-    struct facets *facets;
+    struct mesh *mesh;
     unsigned int ploop;
     unsigned int tloop; /* triangle loop */
     FILE *outf;
 
     outf = fdopen(dup(fd), "w");
 
-    facets = gen_facets(bm, options);
-    if (facets == NULL) {
+    mesh = generate_mesh(bm, options);
+    if (mesh == NULL) {
         fprintf(stderr,"unable to generate triangle mesh\n");
         return false;
     }
 
-    update_indexing(facets);
+    index_mesh(mesh);
 
-    simplify_mesh(facets);
+    simplify_mesh(mesh);
 
-    /* fprintf(stderr, "cubes %d facets %d vertexes %u\n", facets->cubes, facets->count, facets->pcount); */
+    /* fprintf(stderr, "cubes %d facets %d vertexes %u\n", mesh->cubes, mesh->count, mesh->pcount); */
 
     fprintf(outf, "polyhedron(points = [\n");
 
-    for (ploop = 0; ploop < facets->pcount; ploop++) {
+    for (ploop = 0; ploop < mesh->pcount; ploop++) {
         struct pnt *pnt;
-        pnt = facets->p[ploop].p;
+        pnt = mesh->p[ploop].p;
         fprintf(outf, "[%f,%f,%f],\n", pnt->x, pnt->y, pnt->z);
     }
 
     fprintf(outf, "], triangles = [\n");
 
-    for (tloop = 0; tloop < facets->fcount; tloop++) {
+    for (tloop = 0; tloop < mesh->fcount; tloop++) {
         fprintf(outf, "[%u,%u,%u],\n",
-                facets->f[tloop].i[0],
-                facets->f[tloop].i[1],
-                facets->f[tloop].i[2] );
+                mesh->f[tloop].i[0],
+                mesh->f[tloop].i[1],
+                mesh->f[tloop].i[2] );
     }
 
 
     fprintf(outf, "]);");
 
-    free_facets(facets);
+    free_mesh(mesh);
 
     fclose(outf);
 

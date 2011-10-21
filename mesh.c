@@ -30,7 +30,7 @@ enum faces {
     FACE_BACK = 32,
 };
 
-static void add_facet(struct facets *facets,
+static void add_facet(struct mesh *mesh,
                       float vx0,float vy0, float vz0,
                       float vx1,float vy1, float vz1,
                       float vx2,float vy2, float vz2)
@@ -39,14 +39,14 @@ static void add_facet(struct facets *facets,
     pnt a;
     pnt b;
 
-    if ((facets->fcount + 1) > facets->falloc) {
+    if ((mesh->fcount + 1) > mesh->falloc) {
         /* array needs extending */
-        facets->f = realloc(facets->f, (facets->falloc + 1000) * sizeof(struct facet));
-        facets->falloc += 1000;
+        mesh->f = realloc(mesh->f, (mesh->falloc + 1000) * sizeof(struct facet));
+        mesh->falloc += 1000;
     }
 
-    newfacet = facets->f + facets->fcount;
-    facets->fcount++;
+    newfacet = mesh->f + mesh->fcount;
+    mesh->fcount++;
 
     /* normal calculation
      * va = v1 - v0
@@ -79,7 +79,7 @@ static void add_facet(struct facets *facets,
     newfacet->v[2].z = vz2;
 }
 
-#define ADDF(xa,ya,za,xb,yb,zb,xc,yc,zc) add_facet(facets, \
+#define ADDF(xa,ya,za,xb,yb,zb,xc,yc,zc) add_facet(mesh, \
     x + (xa * width), y + (ya * height), z + (za * depth), \
     x + (xb * width), y + (yb * height), z + (zb * depth), \
     x + (xc * width), y + (yc * height), z + (zc * depth))
@@ -87,13 +87,13 @@ static void add_facet(struct facets *facets,
 
 /* generates cube facets for a location */
 static void
-output_cube(struct facets *facets,
+output_cube(struct mesh *mesh,
                 float x, float y, float z,
                 float width, float height, float depth,
                 uint32_t faces)
 {
     if (faces != 0) {
-        facets->cubes++;
+        mesh->cubes++;
     }
 
     switch (faces & 0xf) {
@@ -230,13 +230,13 @@ output_cube(struct facets *facets,
  * @todo make this table driven as a 64 entry switch is out of hand
  */
 static void
-output_marching_squares(struct facets *facets,
+output_marching_squares(struct mesh *mesh,
                 float x, float y, float z,
                 float width, float height, float depth,
                 uint32_t faces)
 {
     if (faces != 0) {
-        facets->cubes++;
+        mesh->cubes++;
     }
 
     switch (faces & 0xf) {
@@ -448,19 +448,9 @@ get_face(bitmap *bm, unsigned int x, unsigned int y, uint8_t transparent)
     return faces;
 }
 
-/** convert raster image into facets
- *
- * consider each pixel in the raster image:
- *   - generate a bitfield indicating on which sides of the pixel faces need to
- *     be covered to generate a convex manifold.
- *   - add triangle facets to list for each face present
- *
- * @todo This could probably be better converted to a marching cubes solution
- *   or as this is a simple 2d extrusion perhaps modified marching squares
- *   http://en.wikipedia.org/wiki/Marching_cubes
- */
-struct facets *
-gen_facets(bitmap *bm, options *options)
+/* exported method docuemnted in mesh.h */
+struct mesh *
+generate_mesh(bitmap *bm, options *options)
 {
     unsigned int row_loop;
     unsigned int col_loop;
@@ -471,11 +461,11 @@ gen_facets(bitmap *bm, options *options)
 
     uint32_t faces;
 
-    struct facets *facets;
+    struct mesh *mesh;
 
-    facets = calloc(1, sizeof(struct facets));
-    if (facets == NULL) {
-        return facets;
+    mesh = calloc(1, sizeof(struct mesh));
+    if (mesh == NULL) {
+        return mesh;
     }
 
     xoff = (options->width / 2);
@@ -486,14 +476,14 @@ gen_facets(bitmap *bm, options *options)
             faces = get_face(bm, col_loop, row_loop, options->transparent);
 
             if (options->finish == FINISH_RAW) {
-                output_cube(facets,
+                output_cube(mesh,
                                 (col_loop * scale) - xoff,
                                 yoff - (row_loop * scale),
                                 0,
                                 scale, scale, options->depth,
                                 faces);
             } else {
-                output_marching_squares(facets,
+                output_marching_squares(mesh,
                                             (col_loop * scale) - xoff,
                                             yoff - (row_loop * scale),
                                             0,
@@ -503,21 +493,21 @@ gen_facets(bitmap *bm, options *options)
         }
     }
 
-    return facets;
+    return mesh;
 }
 
-void free_facets(struct facets *facets)
+void free_mesh(struct mesh *mesh)
 {
-    free(facets->f);
+    free(mesh->f);
 }
 
-static uint32_t find_pnt(struct facets *facets, struct pnt *pnt)
+static uint32_t find_pnt(struct mesh *mesh, struct pnt *pnt)
 {
     uint32_t idx;
-    for (idx = 0; idx < facets->pcount; idx++) {
-        if ((facets->p[idx].p->x == pnt->x) &&
-            (facets->p[idx].p->y == pnt->y) &&
-            (facets->p[idx].p->z == pnt->z)) {
+    for (idx = 0; idx < mesh->pcount; idx++) {
+        if ((mesh->p[idx].p->x == pnt->x) &&
+            (mesh->p[idx].p->y == pnt->y) &&
+            (mesh->p[idx].p->z == pnt->z)) {
             break;
         }
 
@@ -525,44 +515,45 @@ static uint32_t find_pnt(struct facets *facets, struct pnt *pnt)
     return idx;
 }
 
-static idxpnt add_pnt(struct facets *facets, struct pnt *npnt)
+static idxpnt 
+add_pnt(struct mesh *mesh, struct pnt *npnt)
 {
     uint32_t idx;
 
-    idx = find_pnt(facets, npnt);
-    if (idx == facets->pcount) {
+    idx = find_pnt(mesh, npnt);
+    if (idx == mesh->pcount) {
         /* not in array already */
-        if ((facets->pcount + 1) > facets->palloc) {
+        if ((mesh->pcount + 1) > mesh->palloc) {
             /* pnt array needs extending */
-            facets->p = realloc(facets->p,
-                                (facets->palloc + 1000) *
+            mesh->p = realloc(mesh->p,
+                                (mesh->palloc + 1000) *
                                 sizeof(struct vertex));
-            facets->palloc += 1000;
+            mesh->palloc += 1000;
         }
 
-        facets->p[facets->pcount].p = npnt;
-        facets->p[facets->pcount].fcount = 0;
-        facets->pcount++;
+        mesh->p[mesh->pcount].p = npnt;
+        mesh->p[mesh->pcount].fcount = 0;
+        mesh->pcount++;
     }
     return idx;
 }
 
 bool
-update_indexing(struct facets *facets)
+index_mesh(struct mesh *mesh)
 {
     unsigned int floop;
 
     /* manufacture pointlist and update indexed geometry */
-    for (floop = 0; floop < facets->fcount; floop++) {
+    for (floop = 0; floop < mesh->fcount; floop++) {
         idxpnt p0, p1, p2;
         /* update facet with indexed points */
-        p0 = facets->f[floop].i[0] = add_pnt(facets, &facets->f[floop].v[0]);
-        p1 = facets->f[floop].i[1] = add_pnt(facets, &facets->f[floop].v[1]);
-        p2 = facets->f[floop].i[2] = add_pnt(facets, &facets->f[floop].v[2]);
+        p0 = mesh->f[floop].i[0] = add_pnt(mesh, &mesh->f[floop].v[0]);
+        p1 = mesh->f[floop].i[1] = add_pnt(mesh, &mesh->f[floop].v[1]);
+        p2 = mesh->f[floop].i[2] = add_pnt(mesh, &mesh->f[floop].v[2]);
 
-        facets->p[p0].facets[facets->p[p0].fcount++] = &facets->f[floop];
-        facets->p[p1].facets[facets->p[p1].fcount++] = &facets->f[floop];
-        facets->p[p2].facets[facets->p[p2].fcount++] = &facets->f[floop];
+        mesh->p[p0].facets[mesh->p[p0].fcount++] = &mesh->f[floop];
+        mesh->p[p1].facets[mesh->p[p1].fcount++] = &mesh->f[floop];
+        mesh->p[p2].facets[mesh->p[p2].fcount++] = &mesh->f[floop];
     }
 
     return true;;
@@ -603,18 +594,18 @@ static bool is_candidate(struct vertex *vtx)
 }
 
 static bool
-check_adjacent(struct facets *facets, unsigned int ivtx, unsigned int *avtx)
+check_adjacent(struct mesh *mesh, unsigned int ivtx, unsigned int *avtx)
 {
     unsigned int floop; /* facet loop */
     unsigned int vloop; /* vertex within facets */
-    struct vertex *vtx = facets->p + ivtx; /* initial vertex */
+    struct vertex *vtx = mesh->p + ivtx; /* initial vertex */
 
     for (floop = 0; floop < vtx->fcount; floop++) {
         for (vloop = 0; vloop < 3; vloop++) {
             if (vtx->facets[floop]->i[vloop] == ivtx) {
                 continue; /* skip given vertex */
             }
-            if (is_candidate(facets->p + vtx->facets[floop]->i[vloop])) {
+            if (is_candidate(mesh->p + vtx->facets[floop]->i[vloop])) {
                 *avtx = vtx->facets[floop]->i[vloop];
                 return true;
             }
@@ -641,20 +632,20 @@ merge_vertex(unsigned int ivtx0, unsigned int ivtx1)
 * delete degenerate facets(two of their vertecies will be the same
 */
 bool
-simplify_mesh(struct facets *facets)
+simplify_mesh(struct mesh *mesh)
 {
     unsigned int vloop;
     unsigned int vtx1;
 
-    /* ensure index tables ar eup to date */
-    if (facets->p == NULL) {
-        update_indexing(facets);
+    /* ensure index tables are up to date */
+    if (mesh->p == NULL) {
+        index_mesh(mesh);
     }
 
-    for (vloop = 0; vloop < facets->pcount; vloop++) {
-        if (is_candidate(facets->p + vloop)) {
+    for (vloop = 0; vloop < mesh->pcount; vloop++) {
+        if (is_candidate(mesh->p + vloop)) {
             /* check adjacent vertecies */
-            if (check_adjacent(facets, vloop, &vtx1)) {
+            if (check_adjacent(mesh, vloop, &vtx1)) {
                 /* collapse verticies */
                 merge_vertex(vloop, vtx1);
             }

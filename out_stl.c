@@ -38,7 +38,7 @@
  */
 bool output_flat_stl(bitmap *bm, int fd, options *options)
 {
-    struct facets *facets;
+    struct mesh *mesh;
     unsigned int floop;
     uint8_t header[80];
     bool ret = true;
@@ -46,13 +46,13 @@ bool output_flat_stl(bitmap *bm, int fd, options *options)
 
     assert(sizeof(struct facet) == 48); /* this is foul and nasty */
 
-    facets = gen_facets(bm, options);
-    if (facets == NULL) {
+    mesh = generate_mesh(bm, options);
+    if (mesh == NULL) {
         fprintf(stderr,"unable to generate triangle mesh\n");
         return false;
     }
 
-    fprintf(stderr, "cubes %d facets %d\n", facets->cubes, facets->fcount);
+    fprintf(stderr, "cubes %d mesh %d\n", mesh->cubes, mesh->fcount);
 
     memset(header, 0, 80);
 
@@ -63,13 +63,13 @@ bool output_flat_stl(bitmap *bm, int fd, options *options)
         goto output_flat_stl_error;
     }
 
-    if (write(fd, &facets->fcount, sizeof(uint32_t)) != sizeof(uint32_t)) {
+    if (write(fd, &mesh->fcount, sizeof(uint32_t)) != sizeof(uint32_t)) {
         ret = false;
         goto output_flat_stl_error;
     }
 
-    for (floop=0; floop < facets->fcount; floop++) {
-        if (write(fd, facets->f + floop,
+    for (floop=0; floop < mesh->fcount; floop++) {
+        if (write(fd, mesh->f + floop,
                   sizeof(struct facet)) != sizeof(struct facet)) {
             ret = false;
             break;
@@ -82,7 +82,7 @@ bool output_flat_stl(bitmap *bm, int fd, options *options)
     }
 
 output_flat_stl_error:
-    free_facets(facets);
+    free_mesh(mesh);
 
     return ret;
 }
@@ -106,31 +106,31 @@ static inline void output_stl_tri(FILE *outf, const struct facet *facet)
 /* ascii stl outout */
 bool output_flat_astl(bitmap *bm, int fd, options *options)
 {
-    struct facets *facets;
+    struct mesh *mesh;
     unsigned int floop;
     FILE *outf;
 
     outf = fdopen(dup(fd), "w");
 
-    facets = gen_facets(bm, options);
-    if (facets == NULL) {
+    mesh = generate_mesh(bm, options);
+    if (mesh == NULL) {
         fprintf(stderr,"unable to generate triangle mesh\n");
         return false;
     }
 
-    simplify_mesh(facets);
+    simplify_mesh(mesh);
 
-    fprintf(stderr, "cubes %d facets %d\n", facets->cubes, facets->fcount);
+    fprintf(stderr, "cubes %d mesh %d\n", mesh->cubes, mesh->fcount);
 
     fprintf(outf, "solid png2stl_Model\n");
 
-    for (floop = 0; floop < facets->fcount; floop++) {
-        output_stl_tri(outf, facets->f + floop);
+    for (floop = 0; floop < mesh->fcount; floop++) {
+        output_stl_tri(outf, mesh->f + floop);
     }
 
     fprintf(outf, "endsolid png2stl_Model\n");
 
-    free_facets(facets);
+    free_mesh(mesh);
 
     fclose(outf);
 
