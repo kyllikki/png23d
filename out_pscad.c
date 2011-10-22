@@ -41,16 +41,19 @@ bool output_flat_scad_polyhedron(bitmap *bm, int fd, options *options)
 
     index_mesh(mesh);
 
-    simplify_mesh(mesh);
+    if (options->optimise > 0) {
+        simplify_mesh(mesh);
+    }
 
     /* fprintf(stderr, "cubes %d facets %d vertexes %u\n", mesh->cubes, mesh->count, mesh->pcount); */
 
     fprintf(outf, "polyhedron(points = [\n");
 
     for (ploop = 0; ploop < mesh->pcount; ploop++) {
-        struct pnt *pnt;
-        pnt = mesh->p[ploop].p;
-        fprintf(outf, "[%f,%f,%f],\n", pnt->x, pnt->y, pnt->z);
+        fprintf(outf, "[%f,%f,%f],\n", 
+                mesh->p[ploop].pnt.x, 
+                mesh->p[ploop].pnt.y, 
+                mesh->p[ploop].pnt.z);
     }
 
     fprintf(outf, "], triangles = [\n");

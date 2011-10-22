@@ -38,7 +38,7 @@ struct facet {
 /** An indexed vertex within the mesh.
  */
 struct vertex {
-    struct pnt *p; /**< the location of this vertex */
+    struct pnt pnt; /**< the location of this vertex */
     unsigned int fcount; /**< the number of facets that use this vertex */
     struct facet *facets[FACETPNT_CNT]; /**< facets that use this vertex */
 };

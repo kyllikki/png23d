@@ -30,6 +30,8 @@ typedef struct options {
 
     enum output_finish finish;
 
+    unsigned int optimise; /* amount of mesh optimisation to apply */
+
     unsigned int transparent; /* the grey level value at which object is transparent */
     unsigned int levels; /* the number of levels to quantise into below transparent */
 

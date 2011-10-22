@@ -505,9 +505,9 @@ static uint32_t find_pnt(struct mesh *mesh, struct pnt *pnt)
 {
     uint32_t idx;
     for (idx = 0; idx < mesh->pcount; idx++) {
-        if ((mesh->p[idx].p->x == pnt->x) &&
-            (mesh->p[idx].p->y == pnt->y) &&
-            (mesh->p[idx].p->z == pnt->z)) {
+        if ((mesh->p[idx].pnt.x == pnt->x) &&
+            (mesh->p[idx].pnt.y == pnt->y) &&
+            (mesh->p[idx].pnt.z == pnt->z)) {
             break;
         }
 
@@ -531,7 +531,7 @@ add_pnt(struct mesh *mesh, struct pnt *npnt)
             mesh->palloc += 1000;
         }
 
-        mesh->p[mesh->pcount].p = npnt;
+        mesh->p[mesh->pcount].pnt = *npnt;
         mesh->p[mesh->pcount].fcount = 0;
         mesh->pcount++;
     }
@@ -615,11 +615,123 @@ check_adjacent(struct mesh *mesh, unsigned int ivtx, unsigned int *avtx)
     return false; /* no match */
 }
 
-
-static bool
-merge_vertex(unsigned int ivtx0, unsigned int ivtx1)
+static bool 
+remove_facet_from_vertex(struct facet *facet, struct vertex *vertex)
 {
-    fprintf(stderr,"remove edge %u,%u\n", ivtx0, ivtx1);
+    unsigned int floop;
+
+    for (floop = 0; floop < vertex->fcount; floop++) {
+        if (vertex->facets[floop] == facet) {
+            vertex->fcount--;
+            for (; floop < vertex->fcount; floop++) {
+                vertex->facets[floop] = vertex->facets[floop + 1];
+            }
+            return true;
+        }
+    }
+    fprintf(stderr,"failed to remove facet from vertex\n");
+
+    return false;
+}
+
+/* move a vertex of a facet 
+*
+* changes one vertex of a factet to a new facet and updates the destination
+* vertex to reference this facet. 
+* 
+* @return false if from vertex was not in facet else true
+ */
+static bool 
+move_facet_vertex(struct mesh *mesh, 
+                  struct facet *facet,
+                  unsigned int from, 
+                  unsigned int to)
+{
+    if (facet->i[0] == from) {
+        facet->i[0] = to;
+        facet->v[0] = mesh->p[to].pnt;
+    } else if (facet->i[1] == from) {
+        facet->i[1] = to;
+        facet->v[1] = mesh->p[to].pnt;
+    } else if (facet->i[2] == from) {
+        facet->i[2] = to;
+        facet->v[2] = mesh->p[to].pnt;
+    } else {
+        return false;
+    }
+    /* add ourselves to destination vertex */
+    mesh->p[to].facets[mesh->p[to].fcount++] = facet;
+
+    /* remove from old one */
+    remove_facet_from_vertex(facet, mesh->p + from);
+
+    return true;
+}
+
+static bool facet_on_vertex(struct facet *facet, struct vertex *vertex)
+{
+    unsigned int floop;
+
+    for (floop = 0; floop < vertex->fcount; floop++) {
+        if (vertex->facets[floop] == facet) 
+            return false;
+    }
+
+    return true;
+}
+
+
+static bool remove_facet(struct mesh *mesh, struct facet *facet)
+{
+    struct facet *rfacet;
+    /* remove facet from all three vertecies */
+    remove_facet_from_vertex(facet, mesh->p + facet->i[0]);
+    remove_facet_from_vertex(facet, mesh->p + facet->i[1]);
+    remove_facet_from_vertex(facet, mesh->p + facet->i[2]);
+
+    /* only way to efficiently remove a facet is to move the one at the end of
+     * the list here instead 
+     */
+    mesh->fcount--;
+    rfacet = mesh->f + mesh->fcount;
+    if (rfacet != facet) {
+        /* was not already the end entry, have to do some work */
+        memcpy(facet, rfacet, sizeof(struct facet));
+        /* fix up vertex pointers */
+        remove_facet_from_vertex(rfacet, mesh->p + facet->i[0]);
+        remove_facet_from_vertex(rfacet, mesh->p + facet->i[1]);
+        remove_facet_from_vertex(rfacet, mesh->p + facet->i[2]);
+
+        mesh->p[facet->i[0]].facets[mesh->p[facet->i[0]].fcount++] = facet;
+        mesh->p[facet->i[1]].facets[mesh->p[facet->i[1]].fcount++] = facet;
+        mesh->p[facet->i[2]].facets[mesh->p[facet->i[2]].fcount++] = facet;
+
+    }
+    return true;
+}
+
+/* merge an edge by moving all facets from end of edge to start */
+static bool
+merge_edge(struct mesh *mesh, unsigned int start, unsigned int end)
+{
+    struct facet *facet;
+
+    fprintf(stderr,"remove edge %u,%u\n", start, end);
+
+    /* change all the facets on second vertex (ivtx1) to point at first virtex
+     * instead 
+     *
+     * delete degenerate facets(two of their vertecies will be the same
+     */
+    while (mesh->p[end].fcount > 0) {
+        facet = mesh->p[end].facets[0];
+        if (facet_on_vertex(facet, mesh->p + start)) {
+            remove_facet(mesh, facet); /* remove degenerate facet */
+        } else {
+            move_facet_vertex(mesh, facet, end, start);
+        }        
+    }
+
     return false;
 }
 
@@ -629,7 +741,6 @@ merge_vertex(unsigned int ivtx0, unsigned int ivtx1)
 * find vertex where all facets have the same normal
 * search each vertex of each attached facet for one where all its facets have teh same normal
 * merge second vertex into first
-* delete degenerate facets(two of their vertecies will be the same
 */
 bool
 simplify_mesh(struct mesh *mesh)
@@ -647,7 +758,7 @@ simplify_mesh(struct mesh *mesh)
             /* check adjacent vertecies */
             if (check_adjacent(mesh, vloop, &vtx1)) {
                 /* collapse verticies */
-                merge_vertex(vloop, vtx1);
+                merge_edge(mesh, vloop, vtx1);
             }
         }
     }
