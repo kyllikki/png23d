@@ -118,7 +118,9 @@ bool output_flat_astl(bitmap *bm, int fd, options *options)
         return false;
     }
 
-    simplify_mesh(mesh);
+    if (options->optimise > 0) {
+        simplify_mesh(mesh);
+    }
 
     fprintf(stderr, "cubes %d mesh %d\n", mesh->cubes, mesh->fcount);
 

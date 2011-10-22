@@ -745,7 +745,7 @@ merge_edge(struct mesh *mesh, unsigned int start, unsigned int end)
 bool
 simplify_mesh(struct mesh *mesh)
 {
-    unsigned int vloop;
+    unsigned int vloop = 0;
     unsigned int vtx1;
 
     /* ensure index tables are up to date */
@@ -753,13 +753,18 @@ simplify_mesh(struct mesh *mesh)
         index_mesh(mesh);
     }
 
-    for (vloop = 0; vloop < mesh->pcount; vloop++) {
+    while (vloop < mesh->pcount) {
         if (is_candidate(mesh->p + vloop)) {
             /* check adjacent vertecies */
             if (check_adjacent(mesh, vloop, &vtx1)) {
                 /* collapse verticies */
                 merge_edge(mesh, vloop, vtx1);
+            /* do *not* advance past this vertex as we may have just modified it! */
+            } else {
+                vloop++;
             }
+        } else {
+            vloop++;
         }
     }
     return true;
