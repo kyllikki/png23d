@@ -758,19 +758,32 @@ static void dump_mesh(struct mesh *mesh, struct vertex *v0, struct vertex *v1)
 #else
 
 static int dumpno=0;
+static FILE *dumpfile;
 
 #define SVGP(loc) (20 + (loc) ) * 10
 
-static void dump_mesh(struct mesh *mesh, struct vertex *v0, struct vertex *v1)
+static void dump_mesh_init(struct mesh *mesh)
 {
-    char dumpname[64];
-    FILE *dumpfile;
+    dumpfile = fopen("index.html", "w");
+
+    fprintf(dumpfile,"<html>\n<body><table><tr>\n");
+
+}
+
+static void 
+dump_mesh(struct mesh *mesh, bool removing, unsigned int start, unsigned int end)
+{
     unsigned int floop;
+    struct vertex *v0 = mesh->p + start;
+    struct vertex *v1 = NULL;
 
-    snprintf(dumpname,64, "meshdump%d.svg", dumpno++);
-    dumpfile = fopen(dumpname, "w");
+    if (removing) {
+        v1 = mesh->p + end;
+        fprintf(dumpfile, "<tr><th>Operation %d Removing %u->%u</th>", dumpno, start, end);
+        dumpno++;
+    }
 
-    fprintf(dumpfile, "<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">\n");
+    fprintf(dumpfile, "<td><svg width=\"500\" height=\"500\" xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">\n");
 
     for (floop = 0; floop < mesh->fcount; floop++) {
         if (eqpnt(&mesh->f[floop].n, &v0->facets[0]->n)) {
@@ -801,31 +814,31 @@ static void dump_mesh(struct mesh *mesh, struct vertex *v0, struct vertex *v1)
                 "<line x1=\"%.1f\" y1=\"%.1f\" x2=\"%.1f\" y2=\"%.1f\" style=\"stroke:red;stroke-width:5\"/>\n",
                 SVGP(v0->pnt.x), SVGP(v0->pnt.y), 
                 SVGP(v1->pnt.x), SVGP(v1->pnt.y));
+
+            fprintf(dumpfile,
+                    "<text x=\"%.1f\" y=\"%.1f\" fill=\"black\">%u</text>\n", 
+                    SVGP(v1->pnt.x) + 5, SVGP(v1->pnt.y) + 5,  end);
+
     } 
 
     fprintf(dumpfile,
             "<circle cx=\"%.1f\" cy=\"%.1f\" r=\"10\" fill=\"blue\"/>\n",
             SVGP(v0->pnt.x), SVGP(v0->pnt.y));
 
+    fprintf(dumpfile,
+            "<text x=\"%.1f\" y=\"%.1f\" fill=\"black\">%u</text>\n", 
+            SVGP(v0->pnt.x) + 10, SVGP(v0->pnt.y) + 5,  start);
 
-    fprintf(dumpfile, "</svg>");
-    fclose(dumpfile);
+
+    fprintf(dumpfile, "</svg></td>");
+
+    if (!removing) {
+        fprintf(dumpfile, "</tr>");
+    }
 }
 
-static void dump_mesh_index(struct mesh *mesh)
+static void dump_mesh_fini(struct mesh *mesh)
 {
-    FILE *dumpfile;
-    int dloop;
-
-    dumpfile = fopen("index.html", "w");
-
-    fprintf(dumpfile,"<html>\n<body><table>\n");
-
-    for (dloop = 0; dloop < dumpno; dloop+=2) {
-        fprintf(dumpfile,"<tr><td><object width=\"500\" height=\"500\"data=\"meshdump%u.svg\" type=\"image/svg+xml\"></object></td>\n", dloop);
-        fprintf(dumpfile,"<td><object width=\"500\" height=\"500\"data=\"meshdump%u.svg\" type=\"image/svg+xml\"></object></td></tr>\n", dloop+1);
-    }
-
     fprintf(dumpfile,"</table></body>\n</html>\n");
 
     fclose(dumpfile);
@@ -837,7 +850,10 @@ static void dump_mesh_index(struct mesh *mesh)
 static void dump_mesh(struct mesh *mesh, struct vertex *v0, struct vertex *v1)
 {
 }
-static void dump_mesh_index(struct mesh *mesh)
+static void dump_mesh_init(struct mesh *mesh)
+{
+}
+static void dump_mesh_fini(struct mesh *mesh)
 {
 }
 #endif
@@ -850,7 +866,7 @@ merge_edge(struct mesh *mesh, unsigned int start, unsigned int end)
 
     //    printf("remove edge %u,%u\n\n", start, end);
 
-    dump_mesh(mesh, mesh->p + start, mesh->p + end);
+    dump_mesh(mesh, true, start, end);
 
     /* change all the facets on second vertex (ivtx1) to point at first virtex
      * instead 
@@ -866,7 +882,7 @@ merge_edge(struct mesh *mesh, unsigned int start, unsigned int end)
         }        
     }
 
-    dump_mesh(mesh, mesh->p + start, NULL);
+    dump_mesh(mesh, false, start, end);
 
     return false;
 }
@@ -891,6 +907,8 @@ simplify_mesh(struct mesh *mesh)
 
     printf("simplifying %d facets with %d vertexes\n", mesh->fcount, mesh->pcount);
 
+    dump_mesh_init(mesh);
+
     while (vloop < mesh->pcount) {
         /* find a candidate edge */
         if (is_candidate(mesh->p + vloop) && 
@@ -907,7 +925,7 @@ simplify_mesh(struct mesh *mesh)
         }
     }
 
-    dump_mesh_index(mesh);
+    dump_mesh_fini(mesh);
 
     return true;
 }
