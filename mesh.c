@@ -579,12 +579,12 @@ static inline bool nepnt(struct pnt *p0, struct pnt *p1)
     }
 }
 
-/* determinae if a vertex is a removal candidate */
+/* determinae if a vertex is topoligcally a removal candidate  */
 static bool is_candidate(struct vertex *vtx)
 {
     unsigned int floop; /* facet loop */
 
-    /* walk the normals to check tehy are all the same */
+    /* check edge end normals are all the same */
     for (floop = 1; floop < vtx->fcount; floop++) {
         if (nepnt(&vtx->facets[floop - 1]->n, &vtx->facets[floop]->n))
             return false;
@@ -593,21 +593,32 @@ static bool is_candidate(struct vertex *vtx)
     return true;
 }
 
+/** check each adjacent vertex for suitability to be removed.
+ */
 static bool
 check_adjacent(struct mesh *mesh, unsigned int ivtx, unsigned int *avtx)
 {
     unsigned int floop; /* facet loop */
     unsigned int vloop; /* vertex within facets */
     struct vertex *vtx = mesh->p + ivtx; /* initial vertex */
+    unsigned int civtx; /* candidate vertex index */
 
     for (floop = 0; floop < vtx->fcount; floop++) {
         for (vloop = 0; vloop < 3; vloop++) {
-            if (vtx->facets[floop]->i[vloop] == ivtx) {
+            civtx = vtx->facets[floop]->i[vloop];
+
+            if (civtx == ivtx) {
                 continue; /* skip given vertex */
             }
-            if (is_candidate(mesh->p + vtx->facets[floop]->i[vloop])) {
-                *avtx = vtx->facets[floop]->i[vloop];
-                return true;
+
+            if (is_candidate(mesh->p + civtx)) {
+                /* cannot merge edge verticies if it makes the mesh too
+                 * complicated to represent
+                 */
+                if (((vtx->fcount + mesh->p[civtx].fcount) - 2) <= FACETPNT_CNT) {
+                    *avtx = civtx;
+                    return true;
+                }
             }
 
         }
@@ -674,10 +685,10 @@ static bool facet_on_vertex(struct facet *facet, struct vertex *vertex)
 
     for (floop = 0; floop < vertex->fcount; floop++) {
         if (vertex->facets[floop] == facet) 
-            return false;
+            return true;
     }
 
-    return true;
+    return false;
 }
 
 
@@ -709,6 +720,127 @@ static bool remove_facet(struct mesh *mesh, struct facet *facet)
     }
     return true;
 }
+#if 1
+#if 0
+static void dump_mesh(struct mesh *mesh, struct vertex *v0, struct vertex *v1)
+{
+    unsigned int floop;
+    unsigned int vloop;
+
+    printf("--MESH-DUMP--\nINF mesh has %d facets and %d vertex\n", 
+           mesh->fcount, mesh->pcount);
+
+    for (vloop=0; vloop < mesh->pcount; vloop++) {
+        printf("VTX %2d: (%.1f, %.1f, %.1f) ", vloop, 
+               mesh->p[vloop].pnt.x, 
+               mesh->p[vloop].pnt.y, 
+               mesh->p[vloop].pnt.z);
+        for (floop=0; floop < mesh->p[vloop].fcount; floop++) {
+            printf("[%2u,%2u,%2u] ", 
+                   mesh->p[vloop].facets[floop]->i[0],
+                   mesh->p[vloop].facets[floop]->i[1],
+                   mesh->p[vloop].facets[floop]->i[2]);
+        }
+        printf("\n");
+    }
+
+    for (floop=0; floop < mesh->fcount; floop++) {
+        printf("FCT %2d: [%2u,%2u,%2u] (%.1f, %.1f, %.1f) / (%.1f, %.1f, %.1f) / (%.1f, %.1f, %.1f)\n", 
+               floop, 
+               mesh->f[floop].i[0], mesh->f[floop].i[1], mesh->f[floop].i[2],
+               mesh->f[floop].v[0].x, mesh->f[floop].v[0].y, mesh->f[floop].v[0].z, 
+               mesh->f[floop].v[1].x, mesh->f[floop].v[1].y, mesh->f[floop].v[1].z, 
+               mesh->f[floop].v[2].x, mesh->f[floop].v[2].y, mesh->f[floop].v[2].z 
+               );
+    }
+    printf("\n");
+}
+#else
+
+static int dumpno=0;
+
+#define SVGP(loc) (20 + (loc) ) * 10
+
+static void dump_mesh(struct mesh *mesh, struct vertex *v0, struct vertex *v1)
+{
+    char dumpname[64];
+    FILE *dumpfile;
+    unsigned int floop;
+
+    snprintf(dumpname,64, "meshdump%d.svg", dumpno++);
+    dumpfile = fopen(dumpname, "w");
+
+    fprintf(dumpfile, "<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">\n");
+
+    for (floop = 0; floop < mesh->fcount; floop++) {
+        if (eqpnt(&mesh->f[floop].n, &v0->facets[0]->n)) {
+
+            fprintf(dumpfile,
+                    "<polygon points=\"%.1f,%.1f %.1f,%.1f %.1f,%.1f\" style=\"fill:lime;stroke:black;stroke-width=1\"/>\n", 
+                    SVGP(mesh->f[floop].v[0].x), SVGP(mesh->f[floop].v[0].y),
+                    SVGP(mesh->f[floop].v[1].x), SVGP(mesh->f[floop].v[1].y),
+                    SVGP(mesh->f[floop].v[2].x), SVGP(mesh->f[floop].v[2].y));
+
+            /* label facet at centroid */
+            fprintf(dumpfile,
+                    "<text x=\"%.1f\" y=\"%.1f\" fill=\"blue\">%u</text>\n",
+                    (SVGP(mesh->f[floop].v[0].x) + 
+                     SVGP(mesh->f[floop].v[1].x) + 
+                     SVGP(mesh->f[floop].v[2].x)) / 3,
+                    (SVGP(mesh->f[floop].v[0].y) + 
+                     SVGP(mesh->f[floop].v[1].y) + 
+                     SVGP(mesh->f[floop].v[2].y)) / 3,
+                    floop);
+
+
+        }
+    }
+
+    if (v1 != NULL) {
+        fprintf(dumpfile,
+                "<line x1=\"%.1f\" y1=\"%.1f\" x2=\"%.1f\" y2=\"%.1f\" style=\"stroke:red;stroke-width:5\"/>\n",
+                SVGP(v0->pnt.x), SVGP(v0->pnt.y), 
+                SVGP(v1->pnt.x), SVGP(v1->pnt.y));
+    } 
+
+    fprintf(dumpfile,
+            "<circle cx=\"%.1f\" cy=\"%.1f\" r=\"10\" fill=\"blue\"/>\n",
+            SVGP(v0->pnt.x), SVGP(v0->pnt.y));
+
+
+    fprintf(dumpfile, "</svg>");
+    fclose(dumpfile);
+}
+
+static void dump_mesh_index(struct mesh *mesh)
+{
+    FILE *dumpfile;
+    int dloop;
+
+    dumpfile = fopen("index.html", "w");
+
+    fprintf(dumpfile,"<html>\n<body><table>\n");
+
+    for (dloop = 0; dloop < dumpno; dloop+=2) {
+        fprintf(dumpfile,"<tr><td><object width=\"500\" height=\"500\"data=\"meshdump%u.svg\" type=\"image/svg+xml\"></object></td>\n", dloop);
+        fprintf(dumpfile,"<td><object width=\"500\" height=\"500\"data=\"meshdump%u.svg\" type=\"image/svg+xml\"></object></td></tr>\n", dloop+1);
+    }
+
+    fprintf(dumpfile,"</table></body>\n</html>\n");
+
+    fclose(dumpfile);
+
+}
+
+#endif
+#else
+static void dump_mesh(struct mesh *mesh, struct vertex *v0, struct vertex *v1)
+{
+}
+static void dump_mesh_index(struct mesh *mesh)
+{
+}
+#endif
 
 /* merge an edge by moving all facets from end of edge to start */
 static bool
@@ -716,7 +848,9 @@ merge_edge(struct mesh *mesh, unsigned int start, unsigned int end)
 {
     struct facet *facet;
 
-    fprintf(stderr,"remove edge %u,%u\n", start, end);
+    //    printf("remove edge %u,%u\n\n", start, end);
+
+    dump_mesh(mesh, mesh->p + start, mesh->p + end);
 
     /* change all the facets on second vertex (ivtx1) to point at first virtex
      * instead 
@@ -731,6 +865,8 @@ merge_edge(struct mesh *mesh, unsigned int start, unsigned int end)
             move_facet_vertex(mesh, facet, end, start);
         }        
     }
+
+    dump_mesh(mesh, mesh->p + start, NULL);
 
     return false;
 }
@@ -753,19 +889,25 @@ simplify_mesh(struct mesh *mesh)
         index_mesh(mesh);
     }
 
+    printf("simplifying %d facets with %d vertexes\n", mesh->fcount, mesh->pcount);
+
     while (vloop < mesh->pcount) {
-        if (is_candidate(mesh->p + vloop)) {
-            /* check adjacent vertecies */
-            if (check_adjacent(mesh, vloop, &vtx1)) {
-                /* collapse verticies */
-                merge_edge(mesh, vloop, vtx1);
-            /* do *not* advance past this vertex as we may have just modified it! */
-            } else {
-                vloop++;
-            }
+        /* find a candidate edge */
+        if (is_candidate(mesh->p + vloop) && 
+            check_adjacent(mesh, vloop, &vtx1)) {
+
+            /* collapse verticies */
+            merge_edge(mesh, vloop, vtx1);
+
+            /* do *not* advance past this vertex as we may have just modified
+             * it! 
+             */
         } else {
             vloop++;
         }
     }
+
+    dump_mesh_index(mesh);
+
     return true;
 }

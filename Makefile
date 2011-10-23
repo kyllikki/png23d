@@ -8,7 +8,8 @@ ifneq ($(GCCVER),2)
   WARNFLAGS += -Wno-unused-parameter 
 endif
 
-CFLAGS+=$(WARNFLAGS) -O2 -g
+#CFLAGS+=$(WARNFLAGS) -O2 -g
+CFLAGS+=$(WARNFLAGS) -O0 -g
 
 LDFLAGS+=-lpng
 
