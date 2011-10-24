@@ -44,7 +44,7 @@ bool output_flat_stl(bitmap *bm, int fd, options *options)
     bool ret = true;
     uint16_t attributes = 0;
 
-    assert(sizeof(struct facet) == 48); /* this is foul and nasty */
+    assert(sizeof(struct pnt) == 12); /* this is foul and nasty */
 
     mesh = new_mesh();
     if (mesh == NULL) {
@@ -78,8 +78,11 @@ bool output_flat_stl(bitmap *bm, int fd, options *options)
     }
 
     for (floop=0; floop < mesh->fcount; floop++) {
-        if (write(fd, mesh->f + floop,
-                  sizeof(struct facet)) != sizeof(struct facet)) {
+        if (write(fd, &mesh->f[floop].n, sizeof(struct pnt)) != sizeof(struct pnt)) {
+            ret = false;
+            break;
+        }
+        if (write(fd, &mesh->f[floop].v, (3 * sizeof(struct pnt))) != (3 * sizeof(struct pnt))) {
             ret = false;
             break;
         }
@@ -96,7 +99,7 @@ output_flat_stl_error:
     return ret;
 }
 
-static inline void output_stl_tri(FILE *outf, const struct facet *facet)
+static inline void output_stl_tri(FILE *outf, const struct facet *facet, float xscale, float zscale)
 {
     fprintf(outf,
             "  facet normal %.6f %.6f %.6f\n"
@@ -107,9 +110,9 @@ static inline void output_stl_tri(FILE *outf, const struct facet *facet)
             "    endloop\n"
             "  endfacet\n",
             facet->n.x, facet->n.y, facet->n.z,
-            facet->v[0].x, facet->v[0].y, facet->v[0].z,
-            facet->v[1].x, facet->v[1].y, facet->v[1].z,
-            facet->v[2].x, facet->v[2].y, facet->v[2].z);
+            facet->v[0].x * xscale, facet->v[0].y * xscale, facet->v[0].z * zscale,
+            facet->v[1].x * xscale, facet->v[1].y * xscale, facet->v[1].z * zscale,
+            facet->v[2].x * xscale, facet->v[2].y * xscale, facet->v[2].z * zscale);
 }
 
 /* ascii stl outout */
@@ -118,6 +121,7 @@ bool output_flat_astl(bitmap *bm, int fd, options *options)
     struct mesh *mesh;
     unsigned int floop;
     FILE *outf;
+    float xscale;
 
     outf = fdopen(dup(fd), "w");
 
@@ -131,6 +135,7 @@ bool output_flat_astl(bitmap *bm, int fd, options *options)
 
     if (mesh_from_bitmap(mesh, bm, options) == false) {
         fprintf(stderr,"unable to convert bitmap to mesh\n");
+        free_mesh(mesh);
         return false;
     }
 
@@ -138,10 +143,12 @@ bool output_flat_astl(bitmap *bm, int fd, options *options)
         simplify_mesh(mesh);
     }
 
+    xscale = options->width / bm->width;
+
     fprintf(outf, "solid png2stl_Model\n");
 
     for (floop = 0; floop < mesh->fcount; floop++) {
-        output_stl_tri(outf, mesh->f + floop);
+        output_stl_tri(outf, mesh->f + floop, xscale, options->depth);
     }
 
     fprintf(outf, "endsolid png2stl_Model\n");

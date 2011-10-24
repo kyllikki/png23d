@@ -1053,15 +1053,11 @@ mesh_from_bitmap(struct mesh *mesh, bitmap *bm, options *options)
             faces = get_face(bm, col_loop, row_loop, options->transparent);
 
             if (options->finish == FINISH_RAW) {
-                output_cube(mesh,
-                            col_loop, -(float)row_loop, 0,
-                            1, 1, options->depth,
-                            faces);
+                output_cube(mesh, col_loop, -(float)row_loop, 0, 
+                            1, 1, 1, faces);
             } else {
-                output_marching_squares(mesh,
-                                        col_loop, -(float)row_loop, 0,
-                                        1, 1, options->depth,
-                                        faces);
+                output_marching_squares(mesh, col_loop, -(float)row_loop, 0,
+                                        1, 1, 1, faces);
             }
         }
     }
