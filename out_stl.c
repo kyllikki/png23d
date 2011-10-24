@@ -46,13 +46,22 @@ bool output_flat_stl(bitmap *bm, int fd, options *options)
 
     assert(sizeof(struct facet) == 48); /* this is foul and nasty */
 
-    mesh = generate_mesh(bm, options);
+    mesh = new_mesh();
     if (mesh == NULL) {
-        fprintf(stderr,"unable to generate triangle mesh\n");
+        fprintf(stderr,"unable to create mesh\n");
         return false;
     }
 
-    fprintf(stderr, "cubes %d mesh %d\n", mesh->cubes, mesh->fcount);
+    debug_mesh_init(mesh, options->meshdebug);
+
+    if (mesh_from_bitmap(mesh, bm, options) == false) {
+        fprintf(stderr,"unable to convert bitmap to mesh\n");
+        return false;
+    }
+
+    if (options->optimise > 0) {
+        simplify_mesh(mesh);
+    }
 
     memset(header, 0, 80);
 
@@ -112,17 +121,22 @@ bool output_flat_astl(bitmap *bm, int fd, options *options)
 
     outf = fdopen(dup(fd), "w");
 
-    mesh = generate_mesh(bm, options);
+    mesh = new_mesh();
     if (mesh == NULL) {
-        fprintf(stderr,"unable to generate triangle mesh\n");
+        fprintf(stderr,"unable to create mesh\n");
+        return false;
+    }
+
+    debug_mesh_init(mesh, options->meshdebug);
+
+    if (mesh_from_bitmap(mesh, bm, options) == false) {
+        fprintf(stderr,"unable to convert bitmap to mesh\n");
         return false;
     }
 
     if (options->optimise > 0) {
         simplify_mesh(mesh);
     }
-
-    fprintf(stderr, "cubes %d mesh %d\n", mesh->cubes, mesh->fcount);
 
     fprintf(outf, "solid png2stl_Model\n");
 

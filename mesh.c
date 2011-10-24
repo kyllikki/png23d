@@ -30,7 +30,7 @@ enum faces {
     FACE_BACK = 32,
 };
 
-#define DEBUG_DUMP_MESH 1
+#define DUMP_SVG_SIZE 500
 
 
 /* are two points the same location */
@@ -100,8 +100,8 @@ pnt_normal(pnt *n, pnt *v0, pnt *v1, pnt *v2)
     n->z = a.x * b.y - a.y * b.x;
 
     /* check for degenerate triangle */
-    if ((n->x == 0.0) && 
-        (n->y == 0.0) && 
+    if ((n->x == 0.0) &&
+        (n->y == 0.0) &&
         (n->z == 0.0)) {
         return true;
     }
@@ -123,35 +123,39 @@ static bool same_normal(pnt *n1, pnt *n2)
     cross_product(&cn, n1, n2);
     if (cn.x != 0.0 || cn.y != 0.0 || cn.z != 0.0) {
         /* not parallel */
-        return false;     
+        return false;
     }
 
     return true;
 }
 
-#ifdef DEBUG_DUMP_MESH
 
-static int dumpno=0;
-static FILE *dumpfile;
+void
+debug_mesh_init(struct mesh *mesh, const char* filename)
+{
+    if (filename == NULL)
+        return;
 
-#define SVGPX(loc) ( (loc) ) * 60
-#define SVGPY(loc) (60 - ((loc) * 60))
-//#define SVGPX(loc) (loc) * 4
-//#define SVGPY(loc) (60 - ((loc) * 4))
+    mesh->dumpfile = fopen(filename, "w");
+
+    if (mesh->dumpfile == NULL)
+        return;
+
+    fprintf(mesh->dumpfile,"<html>\n<body>");
+
+}
 
 static void
-dump_mesh_init(struct mesh *mesh)
+dump_mesh_simplify_init(struct mesh *mesh)
 {
-    dumpfile = fopen("index.html", "w");
+    if (mesh->dumpfile == NULL)
+        return;
 
-    fprintf(dumpfile,"<html>\n<body>");
-    fprintf(dumpfile,
-            "<h1>simplifying %d facets with %d vertexes</h1>\n",
+    fprintf(mesh->dumpfile,
+            "<h2>Mesh Simplify</h2><p>Starting with %d facets and %d vertexes.\n",
             mesh->fcount, mesh->pcount);
 
-    fprintf(dumpfile,
-            "<table><tr>\n");
-
+    fprintf(mesh->dumpfile, "<table><tr>\n");
 }
 
 static void
@@ -161,28 +165,38 @@ dump_mesh(struct mesh *mesh,
           unsigned int end)
 {
     unsigned int floop;
-    struct vertex *v0 = mesh->p + start;
+    struct vertex *v0;
     struct vertex *v1 = NULL;
-    return;
+
+    if (mesh->dumpfile == NULL)
+        return;
+
+#define SVGPX(loc) ( (loc) ) * (DUMP_SVG_SIZE / mesh->width)
+#define SVGPY(loc) (mesh->height - SVGPX(loc))
+
+    v0 = mesh->p + start;
+
     if (removing) {
         v1 = mesh->p + end;
-        fprintf(dumpfile, "<tr><th>Operation %d Removing %u->%u</th>", dumpno, start, end);
-        dumpno++;
+        fprintf(mesh->dumpfile,
+                "<tr><th>Operation %d Removing %u->%u</th>",
+                mesh->dumpno, start, end);
+        mesh->dumpno++;
     }
 
-    fprintf(dumpfile, "<td><svg width=\"500\" height=\"500\" xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">\n");
+    fprintf(mesh->dumpfile, "<td><svg width=\"%d\" height=\"%d\" xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">\n", DUMP_SVG_SIZE, DUMP_SVG_SIZE);
 
     for (floop = 0; floop < mesh->fcount; floop++) {
         if (same_normal(&mesh->f[floop].n, &v0->facets[0]->n)) {
 
-            fprintf(dumpfile,
+            fprintf(mesh->dumpfile,
                     "<polygon points=\"%.1f,%.1f %.1f,%.1f %.1f,%.1f\" style=\"fill:lime;stroke:black;stroke-width=1\"/>\n",
                     SVGPX(mesh->f[floop].v[0].x), SVGPY(mesh->f[floop].v[0].y),
                     SVGPX(mesh->f[floop].v[1].x), SVGPY(mesh->f[floop].v[1].y),
                     SVGPX(mesh->f[floop].v[2].x), SVGPY(mesh->f[floop].v[2].y));
 
             /* label facet at centroid */
-            fprintf(dumpfile,
+            fprintf(mesh->dumpfile,
                     "<text x=\"%.1f\" y=\"%.1f\" fill=\"blue\">%u</text>\n",
                     (SVGPX(mesh->f[floop].v[0].x) +
                      SVGPX(mesh->f[floop].v[1].x) +
@@ -197,55 +211,71 @@ dump_mesh(struct mesh *mesh,
     }
 
     if (v1 != NULL) {
-        fprintf(dumpfile,
+        fprintf(mesh->dumpfile,
                 "<line x1=\"%.1f\" y1=\"%.1f\" x2=\"%.1f\" y2=\"%.1f\" style=\"stroke:red;stroke-width:5\"/>\n",
                 SVGPX(v0->pnt.x), SVGPY(v0->pnt.y),
                 SVGPX(v1->pnt.x), SVGPY(v1->pnt.y));
 
-        fprintf(dumpfile,
+        fprintf(mesh->dumpfile,
                 "<text x=\"%.1f\" y=\"%.1f\" fill=\"black\">%u</text>\n",
                 SVGPX(v1->pnt.x) + 5, SVGPY(v1->pnt.y) + 5,  end);
 
     }
 
-    fprintf(dumpfile,
+    fprintf(mesh->dumpfile,
             "<circle cx=\"%.1f\" cy=\"%.1f\" r=\"10\" fill=\"blue\"/>\n",
             SVGPX(v0->pnt.x), SVGPY(v0->pnt.y));
 
-    fprintf(dumpfile,
+    fprintf(mesh->dumpfile,
             "<text x=\"%.1f\" y=\"%.1f\" fill=\"black\">%u</text>\n",
             SVGPX(v0->pnt.x) + 10, SVGPY(v0->pnt.y) + 5,  start);
 
 
-    fprintf(dumpfile, "</svg></td>");
+    fprintf(mesh->dumpfile, "</svg></td>");
 
     if (!removing) {
-        fprintf(dumpfile, "</tr>");
+        fprintf(mesh->dumpfile, "</tr>");
     }
 }
 
 
 
-static void dump_mesh_fini(struct mesh *mesh, unsigned int start)
+static void
+dump_mesh_simplify_fini(struct mesh *mesh)
+{
+    if (mesh->dumpfile == NULL)
+        return;
+
+    fprintf(mesh->dumpfile,"</table>");
+}
+
+void debug_mesh_fini(struct mesh *mesh, unsigned int start)
 {
     unsigned int floop;
     struct vertex *v0 = mesh->p + start;
 
-    fprintf(dumpfile,"</table>");
+    if (mesh->dumpfile == NULL)
+        return;
 
-    fprintf(dumpfile, "<svg width=\"1000\" height=\"1000\" xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">\n");
+    fprintf(mesh->dumpfile, "<h2>Final mesh</h2>");
+
+    fprintf(mesh->dumpfile,
+            "<p>Final mesh had %d facets and %d vertexes.</p>\n",
+            mesh->fcount, mesh->pcount);
+
+    fprintf(mesh->dumpfile,"<p>Mesh of all facets with common normal</p>\n<svg width=\"%d\" height=\"%d\" xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">\n", DUMP_SVG_SIZE, DUMP_SVG_SIZE);
 
     for (floop = 0; floop < mesh->fcount; floop++) {
         if (same_normal(&mesh->f[floop].n, &v0->facets[0]->n)) {
 
-            fprintf(dumpfile,
+            fprintf(mesh->dumpfile,
                     "<polygon points=\"%.1f,%.1f %.1f,%.1f %.1f,%.1f\" style=\"fill:lime;stroke:black;stroke-width=1\"/>\n",
                     SVGPX(mesh->f[floop].v[0].x), SVGPY(mesh->f[floop].v[0].y),
                     SVGPX(mesh->f[floop].v[1].x), SVGPY(mesh->f[floop].v[1].y),
                     SVGPX(mesh->f[floop].v[2].x), SVGPY(mesh->f[floop].v[2].y));
 
             /* label facet at centroid */
-            fprintf(dumpfile,
+            fprintf(mesh->dumpfile,
                     "<text x=\"%.1f\" y=\"%.1f\" fill=\"blue\">%u</text>\n",
                     (SVGPX(mesh->f[floop].v[0].x) +
                      SVGPX(mesh->f[floop].v[1].x) +
@@ -259,17 +289,12 @@ static void dump_mesh_fini(struct mesh *mesh, unsigned int start)
         }
     }
 
-    fprintf(dumpfile,"</body>\n</html>\n");
+    fprintf(mesh->dumpfile,"</body>\n</html>\n");
 
-    fclose(dumpfile);
+    fclose(mesh->dumpfile);
 
+    mesh->dumpfile = NULL;
 }
-
-#else
-#define dump_mesh(...)
-#define dump_mesh_init(...)
-#define dump_mesh_fini(...)
-#endif
 
 
 static bool
@@ -301,9 +326,9 @@ add_facet(struct mesh *mesh,
     newfacet->v[2].y = vy2;
     newfacet->v[2].z = vz2;
 
-    degenerate = pnt_normal(&newfacet->n, 
-                            &newfacet->v[0], 
-                            &newfacet->v[1], 
+    degenerate = pnt_normal(&newfacet->n,
+                            &newfacet->v[0],
+                            &newfacet->v[1],
                             &newfacet->v[2]);
 
     /* do not add degenerate facets */
@@ -728,7 +753,7 @@ static bool is_candidate(struct mesh *mesh, int ivtx)
     struct vertex *vtx = mesh->p + ivtx;
 
     /* Every facet at the end of the edge must have a normal which is parallel
-     * and the same sign magnitude 
+     * and the same sign magnitude
      */
     for (floop = 1; floop < vtx->fcount; floop++) {
         if (!same_normal(&vtx->facets[floop - 1]->n, &vtx->facets[floop]->n))
@@ -745,7 +770,7 @@ check_move_ok(struct mesh *mesh, unsigned int from, unsigned int to)
     unsigned int floop; /* facet loop */
     struct vertex *fvtx = mesh->p + from; /* from vertex */
     struct vertex *tvtx = mesh->p + to; /* to vertex */
-    bool degenerate = false; 
+    bool degenerate = false;
     pnt nn;
     pnt *v0;
     pnt *v1;
@@ -786,7 +811,7 @@ check_move_ok(struct mesh *mesh, unsigned int from, unsigned int to)
                 return false;
             }
         }
-        
+
     }
     return true;
 }
@@ -919,16 +944,16 @@ move_facet_vertex(struct mesh *mesh,
     if(remove_facet_from_vertex(facet, mesh->p + from) == false) {
         return false;
     }
-    
+
     /* recompute normal */
     if (pnt_normal(&facet->n, &facet->v[0], &facet->v[1], &facet->v[2])) {
         /* triangle has become degenerate */
-        fprintf(stderr, 
-                "Degenerate facet %ld on vertex move\n", 
+        fprintf(stderr,
+                "Degenerate facet %ld on vertex move\n",
                 (facet - mesh->f));
         return false;
     }
-    
+
     return true;
 }
 
@@ -1002,20 +1027,26 @@ static void verify_mesh(struct mesh *mesh)
 
 
 /* exported method docuemnted in mesh.h */
-struct mesh *
-generate_mesh(bitmap *bm, options *options)
+struct mesh *new_mesh(void)
+{
+    struct mesh *mesh;
+
+    mesh = calloc(1, sizeof(struct mesh));
+
+    return mesh;
+}
+
+/* exported method docuemnted in mesh.h */
+bool
+mesh_from_bitmap(struct mesh *mesh, bitmap *bm, options *options)
 {
     unsigned int row_loop;
     unsigned int col_loop;
 
     uint32_t faces;
 
-    struct mesh *mesh;
-
-    mesh = calloc(1, sizeof(struct mesh));
-    if (mesh == NULL) {
-        return mesh;
-    }
+    mesh->height = bm->height;
+    mesh->width = bm->width;
 
     for (row_loop = 0; row_loop < bm->height; row_loop++) {
         for (col_loop = 0; col_loop < bm->width; col_loop++) {
@@ -1035,12 +1066,13 @@ generate_mesh(bitmap *bm, options *options)
         }
     }
 
-    return mesh;
+    return true;
 }
 
 /* exported method docuemnted in mesh.h */
 void free_mesh(struct mesh *mesh)
 {
+    debug_mesh_fini(mesh, 4);
     free(mesh->f);
 }
 
@@ -1085,7 +1117,7 @@ simplify_mesh(struct mesh *mesh)
         index_mesh(mesh);
     }
 
-    dump_mesh_init(mesh);
+    dump_mesh_simplify_init(mesh);
 
     while (vloop < mesh->pcount) {
         /* find a candidate edge */
@@ -1102,7 +1134,7 @@ simplify_mesh(struct mesh *mesh)
         }
     }
 
-    dump_mesh_fini(mesh, 4);
+    dump_mesh_simplify_fini(mesh);
 
     verify_mesh(mesh);
 

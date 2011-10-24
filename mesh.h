@@ -12,7 +12,7 @@
 #ifndef PNG23D_MESH_H
 #define PNG23D_MESH_H 1
 
-#define FACETPNT_CNT 16
+#define FACETPNT_CNT 32
 
 /* 3d point */
 typedef struct pnt {
@@ -51,14 +51,25 @@ struct mesh {
     uint32_t fcount; /**< number of valid facets in the array */
     uint32_t falloc; /**< numer of facets currently allocated */
 
-    /* indexed points */
-    struct vertex *p; /**< array of verticies */
-    uint32_t pcount; /**< number of valid verticies in the array */
-    uint32_t palloc; /**< numer of verticies currently allocated */
+    /* indexed vertices */
+    struct vertex *p; /**< array of vertices */
+    uint32_t pcount; /**< number of valid vertices in the array */
+    uint32_t palloc; /**< numer of vertices currently allocated */
     
+    /* meta info */
+    uint32_t width; /* conversion source width */
+    uint32_t height; /* conversion source height */
+
     uint32_t cubes; /**< number of cubes with at lease one face */
+
+    /* debug */
+    int dumpno;
+    FILE *dumpfile;
+
 };
 
+/* create new empty mesh */
+struct mesh *new_mesh(void);
 
 /** Convert raster image into triangle mesh
  *
@@ -71,7 +82,7 @@ struct mesh {
  *       instead of this simple 2d extrusion of modified marching squares
  *       http://en.wikipedia.org/wiki/Marching_cubes
  */
-struct mesh *generate_mesh(bitmap *bm, options *options);
+bool mesh_from_bitmap(struct mesh *mesh, bitmap *bm, options *options);
 
 /** free mesh and all resources it holds */
 void free_mesh(struct mesh *mesh);
@@ -81,5 +92,8 @@ bool index_mesh(struct mesh *mesh);
 
 /** remove uneccessary verticies */
 bool simplify_mesh(struct mesh *mesh);
+
+/** initialise debugging on mesh */
+void debug_mesh_init(struct mesh *mesh, const char* filename);
 
 #endif

@@ -44,7 +44,7 @@ set_options(int argc, char **argv)
     options->height = 0.0;
     options->depth = 1.0;
 
-    while ((opt = getopt(argc, argv, "vf:w:d:h:l:q:t:O:")) != -1) {
+    while ((opt = getopt(argc, argv, "vf:w:d:h:m:l:q:t:O:")) != -1) {
         switch (opt) {
 
         case 'f': /* output finish */
@@ -72,6 +72,10 @@ set_options(int argc, char **argv)
 
         case 'O': /* optimisation level */
             options->optimise = strtoul(optarg, NULL,0);
+            break;
+
+        case 'm': /* mesh debug output filename */
+            options->meshdebug = strdup(optarg);
             break;
 
         case 'l': /* transparent level */

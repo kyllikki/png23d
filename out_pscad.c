@@ -33,19 +33,24 @@ bool output_flat_scad_polyhedron(bitmap *bm, int fd, options *options)
 
     outf = fdopen(dup(fd), "w");
 
-    mesh = generate_mesh(bm, options);
+    mesh = new_mesh();
     if (mesh == NULL) {
-        fprintf(stderr,"unable to generate triangle mesh\n");
+        fprintf(stderr,"unable to create mesh\n");
         return false;
     }
 
-    index_mesh(mesh);
+    debug_mesh_init(mesh, options->meshdebug);
+
+    if (mesh_from_bitmap(mesh, bm, options) == false) {
+        fprintf(stderr,"unable to convert bitmap to mesh\n");
+        return false;
+    }
 
     if (options->optimise > 0) {
         simplify_mesh(mesh);
+    } else {
+        index_mesh(mesh);
     }
-
-    /* fprintf(stderr, "cubes %d facets %d vertexes %u\n", mesh->cubes, mesh->count, mesh->pcount); */
 
     fprintf(outf, "polyhedron(points = [\n");
 

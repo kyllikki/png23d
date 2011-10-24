@@ -42,6 +42,8 @@ typedef struct options {
     float height; /* the target height */
     float depth; /* the target depth */
 
+    char *meshdebug; /* filename for mesh debug output */
+
 } options;
 
 #endif
