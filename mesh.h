@@ -96,4 +96,10 @@ bool simplify_mesh(struct mesh *mesh);
 /** initialise debugging on mesh */
 void debug_mesh_init(struct mesh *mesh, const char* filename);
 
+bool mesh_add_facet(struct mesh *mesh,
+                    float vx0,float vy0, float vz0,
+                    float vx1,float vy1, float vz1,
+                    float vx2,float vy2, float vz2);
+
+
 #endif

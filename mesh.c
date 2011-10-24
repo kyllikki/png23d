@@ -20,15 +20,8 @@
 #include "option.h"
 #include "bitmap.h"
 #include "mesh.h"
+#include "mesh_gen.h"
 
-enum faces {
-    FACE_LEFT = 1,
-    FACE_RIGHT = 2,
-    FACE_TOP = 4,
-    FACE_BOT = 8,
-    FACE_FRONT = 16,
-    FACE_BACK = 32,
-};
 
 #define DUMP_SVG_SIZE 500
 
@@ -249,7 +242,8 @@ dump_mesh_simplify_fini(struct mesh *mesh)
     fprintf(mesh->dumpfile,"</table>");
 }
 
-void debug_mesh_fini(struct mesh *mesh, unsigned int start)
+static void 
+debug_mesh_fini(struct mesh *mesh, unsigned int start)
 {
     unsigned int floop;
     struct vertex *v0 = mesh->p + start;
@@ -297,415 +291,6 @@ void debug_mesh_fini(struct mesh *mesh, unsigned int start)
 }
 
 
-static bool
-add_facet(struct mesh *mesh,
-          float vx0,float vy0, float vz0,
-          float vx1,float vy1, float vz1,
-          float vx2,float vy2, float vz2)
-{
-    struct facet *newfacet;
-    bool degenerate = false;
-
-    if ((mesh->fcount + 1) > mesh->falloc) {
-        /* array needs extending */
-        mesh->f = realloc(mesh->f, (mesh->falloc + 1000) * sizeof(struct facet));
-        mesh->falloc += 1000;
-    }
-
-    newfacet = mesh->f + mesh->fcount;
-
-    newfacet->v[0].x = vx0;
-    newfacet->v[0].y = vy0;
-    newfacet->v[0].z = vz0;
-
-    newfacet->v[1].x = vx1;
-    newfacet->v[1].y = vy1;
-    newfacet->v[1].z = vz1;
-
-    newfacet->v[2].x = vx2;
-    newfacet->v[2].y = vy2;
-    newfacet->v[2].z = vz2;
-
-    degenerate = pnt_normal(&newfacet->n,
-                            &newfacet->v[0],
-                            &newfacet->v[1],
-                            &newfacet->v[2]);
-
-    /* do not add degenerate facets */
-    if (!degenerate) {
-        mesh->fcount++;
-    }
-
-    return degenerate;
-}
-
-#define ADDF(xa,ya,za,xb,yb,zb,xc,yc,zc) add_facet(mesh,                \
-        x + (xa * width), y + (ya * height), z + (za * depth),          \
-        x + (xb * width), y + (yb * height), z + (zb * depth),          \
-        x + (xc * width), y + (yc * height), z + (zc * depth))
-
-/* generates cube facets for a location */
-static void
-output_cube(struct mesh *mesh,
-            float x, float y, float z,
-            float width, float height, float depth,
-            uint32_t faces)
-{
-    if (faces != 0) {
-        mesh->cubes++;
-    }
-
-    switch (faces & 0xf) {
-    case 0: /* empty */
-        break;
-
-    case FACE_LEFT:
-        ADDF(0,0,0, 0,0,1, 0,1,0);
-        ADDF(0,1,0, 0,0,1, 0,1,1);
-        break;
-
-    case FACE_RIGHT:
-        ADDF(1,0,0, 1,1,0, 1,0,1);
-        ADDF(1,1,0, 1,1,1, 1,0,1);
-        break;
-
-    case (FACE_LEFT | FACE_RIGHT) :
-        ADDF(0,0,0, 0,0,1, 0,1,0);
-        ADDF(0,1,0, 0,0,1, 0,1,1);
-        ADDF(1,0,0, 1,1,0, 1,0,1);
-        ADDF(1,1,0, 1,1,1, 1,0,1);
-        break;
-
-    case FACE_TOP:
-        ADDF(0,1,0, 0,1,1, 1,1,0);
-        ADDF(0,1,1, 1,1,1, 1,1,0);
-        break;
-
-    case (FACE_TOP | FACE_LEFT):
-        ADDF(0,1,0, 0,1,1, 1,1,0);
-        ADDF(0,1,1, 1,1,1, 1,1,0);
-        ADDF(0,0,0, 0,0,1, 0,1,0);
-        ADDF(0,1,0, 0,0,1, 0,1,1);
-        break;
-
-    case (FACE_TOP | FACE_RIGHT):
-        ADDF(0,1,0, 0,1,1, 1,1,0);
-        ADDF(0,1,1, 1,1,1, 1,1,0);
-        ADDF(1,0,0, 1,1,0, 1,0,1);
-        ADDF(1,1,0, 1,1,1, 1,0,1);
-        break;
-
-    case (FACE_TOP | FACE_LEFT | FACE_RIGHT):
-        ADDF(0,1,0, 0,1,1, 1,1,0);
-        ADDF(0,1,1, 1,1,1, 1,1,0);
-        ADDF(0,0,0, 0,0,1, 0,1,0);
-        ADDF(0,1,0, 0,0,1, 0,1,1);
-        ADDF(1,0,0, 1,1,0, 1,0,1);
-        ADDF(1,1,0, 1,1,1, 1,0,1);
-        break;
-
-    case FACE_BOT:
-        ADDF(0,0,0, 1,0,0, 0,0,1);
-        ADDF(0,0,1, 1,0,0, 1,0,1);
-        break;
-
-    case (FACE_BOT | FACE_LEFT):
-        ADDF(0,0,0, 1,0,0, 0,0,1);
-        ADDF(0,0,1, 1,0,0, 1,0,1);
-        ADDF(0,0,0, 0,0,1, 0,1,0);
-        ADDF(0,1,0, 0,0,1, 0,1,1);
-        break;
-
-    case (FACE_BOT | FACE_RIGHT):
-        ADDF(0,0,0, 1,0,0, 0,0,1);
-        ADDF(0,0,1, 1,0,0, 1,0,1);
-        ADDF(1,0,0, 1,1,0, 1,0,1);
-        ADDF(1,1,0, 1,1,1, 1,0,1);
-        break;
-
-    case (FACE_BOT | FACE_LEFT | FACE_RIGHT) :
-        ADDF(0,0,0, 1,0,0, 0,0,1);
-        ADDF(0,0,1, 1,0,0, 1,0,1);
-        ADDF(0,0,0, 0,0,1, 0,1,0);
-        ADDF(0,1,0, 0,0,1, 0,1,1);
-        ADDF(1,0,0, 1,1,0, 1,0,1);
-        ADDF(1,1,0, 1,1,1, 1,0,1);
-        break;
-
-    case (FACE_BOT | FACE_TOP):
-        ADDF(0,0,0, 1,0,0, 0,0,1);
-        ADDF(0,0,1, 1,0,0, 1,0,1);
-        ADDF(0,1,0, 0,1,1, 1,1,0);
-        ADDF(0,1,1, 1,1,1, 1,1,0);
-        break;
-
-    case (FACE_BOT | FACE_TOP | FACE_LEFT):
-        ADDF(0,0,0, 1,0,0, 0,0,1);
-        ADDF(0,0,1, 1,0,0, 1,0,1);
-        ADDF(0,1,0, 0,1,1, 1,1,0);
-        ADDF(0,1,1, 1,1,1, 1,1,0);
-        ADDF(0,0,0, 0,0,1, 0,1,0);
-        ADDF(0,1,0, 0,0,1, 0,1,1);
-        break;
-
-    case (FACE_BOT | FACE_TOP | FACE_RIGHT):
-        ADDF(0,0,0, 1,0,0, 0,0,1);
-        ADDF(0,0,1, 1,0,0, 1,0,1);
-        ADDF(0,1,0, 0,1,1, 1,1,0);
-        ADDF(0,1,1, 1,1,1, 1,1,0);
-        ADDF(1,0,0, 1,1,0, 1,0,1);
-        ADDF(1,1,0, 1,1,1, 1,0,1);
-        break;
-
-    case (FACE_BOT | FACE_TOP | FACE_LEFT | FACE_RIGHT):
-        ADDF(0,0,0, 1,0,0, 0,0,1);
-        ADDF(0,0,1, 1,0,0, 1,0,1);
-        ADDF(0,1,0, 0,1,1, 1,1,0);
-        ADDF(0,1,1, 1,1,1, 1,1,0);
-        ADDF(0,0,0, 0,0,1, 0,1,0);
-        ADDF(0,1,0, 0,0,1, 0,1,1);
-        ADDF(1,0,0, 1,1,0, 1,0,1);
-        ADDF(1,1,0, 1,1,1, 1,0,1);
-        break;
-
-    }
-
-    if ((faces & FACE_FRONT) != 0) {
-        ADDF(0,0,0, 0,1,0, 1,0,0);
-        ADDF(0,1,0, 1,1,0, 1,0,0);
-    }
-
-    if ((faces & FACE_BACK) != 0) {
-        ADDF(0,0,1, 1,0,1, 0,1,1);
-        ADDF(0,1,1, 1,0,1, 1,1,1);
-    }
-
-}
-
-/* generates smoothed facets for a location
- *
- * appies marching squares (ish) to generate facets
- *
- * @todo make this table driven as a 64 entry switch is out of hand
- */
-static void
-output_marching_squares(struct mesh *mesh,
-                        float x, float y, float z,
-                        float width, float height, float depth,
-                        uint32_t faces)
-{
-    if (faces != 0) {
-        mesh->cubes++;
-    }
-
-    switch (faces & 0xf) {
-    case 0: /* empty */
-        break;
-
-    case FACE_LEFT:
-        ADDF(0,0,0, 0,0,1, 0,1,0);
-        ADDF(0,1,0, 0,0,1, 0,1,1);
-        break;
-
-    case FACE_RIGHT:
-        ADDF(1,0,0, 1,1,0, 1,0,1);
-        ADDF(1,1,0, 1,1,1, 1,0,1);
-        break;
-
-    case (FACE_LEFT | FACE_RIGHT) :
-        ADDF(0,0,0, 0,0,1, 0,1,0);
-        ADDF(0,1,0, 0,0,1, 0,1,1);
-
-        ADDF(1,0,0, 1,1,0, 1,0,1);
-        ADDF(1,1,0, 1,1,1, 1,0,1);
-        break;
-
-    case FACE_TOP:
-        ADDF(0,1,0, 0,1,1, 1,1,0);
-        ADDF(0,1,1, 1,1,1, 1,1,0);
-        break;
-
-    case (FACE_TOP | FACE_LEFT):
-        ADDF(0,0,0, 0,0,1, 1,1,0);
-        ADDF(1,1,0, 0,0,1, 1,1,1);
-
-        if ((faces & FACE_FRONT) != 0) {
-            ADDF(0,0,0, 1,1,0, 1,0,0);
-            faces = faces & ~FACE_FRONT;
-        }
-
-        if ((faces & FACE_BACK) != 0) {
-            ADDF(0,0,1, 1,0,1, 1,1,1);
-            faces = faces & ~FACE_BACK;
-        }
-
-        break;
-
-    case (FACE_TOP | FACE_RIGHT):
-        ADDF(1,0,0, 0,1,0, 1,0,1);
-        ADDF(0,1,0, 0,1,1, 1,0,1);
-
-        if ((faces & FACE_FRONT) != 0) {
-            ADDF(1,0,0, 0,0,0, 0,1,0);
-            faces = faces & ~FACE_FRONT;
-        }
-
-        if ((faces & FACE_BACK) != 0) {
-            ADDF(1,0,1, 0,1,1, 0,0,1);
-            faces = faces & ~FACE_BACK;
-        }
-        break;
-
-    case (FACE_TOP | FACE_LEFT | FACE_RIGHT):
-        ADDF(0,1,0, 0,1,1, 1,1,0);
-        ADDF(0,1,1, 1,1,1, 1,1,0);
-
-        ADDF(0,0,0, 0,0,1, 0,1,0);
-        ADDF(0,1,0, 0,0,1, 0,1,1);
-
-        ADDF(1,0,0, 1,1,0, 1,0,1);
-        ADDF(1,1,0, 1,1,1, 1,0,1);
-        break;
-
-    case FACE_BOT:
-        ADDF(0,0,0, 1,0,0, 0,0,1);
-        ADDF(0,0,1, 1,0,0, 1,0,1);
-        break;
-
-    case (FACE_BOT | FACE_LEFT):
-        ADDF(0,1,0, 1,0,0, 1,0,1);
-        ADDF(0,1,0, 1,0,1, 0,1,1);
-
-        if ((faces & FACE_FRONT) != 0) {
-            ADDF(1,0,0, 0,1,0, 1,1,0);
-            faces = faces & ~FACE_FRONT;
-        }
-
-        if ((faces & FACE_BACK) != 0) {
-            ADDF(1,0,1, 1,1,1, 0,1,1);
-            faces = faces & ~FACE_BACK;
-        }
-
-        break;
-
-    case (FACE_BOT | FACE_RIGHT):
-        ADDF(0,0,0, 1,1,0, 0,0,1);
-        ADDF(0,0,1, 1,1,0, 1,1,1);
-
-        if ((faces & FACE_FRONT) != 0) {
-            ADDF(0,0,0, 0,1,0, 1,1,0);
-            faces = faces & ~FACE_FRONT;
-        }
-
-        if ((faces & FACE_BACK) != 0) {
-            ADDF(0,0,1, 1,1,1, 0,1,1);
-            faces = faces & ~FACE_BACK;
-        }
-
-        break;
-
-    case (FACE_BOT | FACE_LEFT | FACE_RIGHT) :
-        ADDF(0,0,0, 1,0,0, 0,0,1);
-        ADDF(0,0,1, 1,0,0, 1,0,1);
-
-        ADDF(0,0,0, 0,0,1, 0,1,0);
-        ADDF(0,1,0, 0,0,1, 0,1,1);
-
-        ADDF(1,0,0, 1,1,0, 1,0,1);
-        ADDF(1,1,0, 1,1,1, 1,0,1);
-        break;
-
-    case (FACE_BOT | FACE_TOP):
-        ADDF(0,0,0, 1,0,0, 0,0,1);
-        ADDF(0,0,1, 1,0,0, 1,0,1);
-
-        ADDF(0,1,0, 0,1,1, 1,1,0);
-        ADDF(0,1,1, 1,1,1, 1,1,0);
-        break;
-
-    case (FACE_BOT | FACE_TOP | FACE_LEFT):
-        ADDF(0,0,0, 1,0,0, 0,0,1);
-        ADDF(0,0,1, 1,0,0, 1,0,1);
-
-        ADDF(0,1,0, 0,1,1, 1,1,0);
-        ADDF(0,1,1, 1,1,1, 1,1,0);
-
-        ADDF(0,0,0, 0,0,1, 0,1,0);
-        ADDF(0,1,0, 0,0,1, 0,1,1);
-        break;
-
-    case (FACE_BOT | FACE_TOP | FACE_RIGHT):
-        ADDF(0,0,0, 1,0,0, 0,0,1);
-        ADDF(0,0,1, 1,0,0, 1,0,1);
-
-        ADDF(0,1,0, 0,1,1, 1,1,0);
-        ADDF(0,1,1, 1,1,1, 1,1,0);
-
-        ADDF(1,0,0, 1,1,0, 1,0,1);
-        ADDF(1,1,0, 1,1,1, 1,0,1);
-        break;
-
-    case (FACE_BOT | FACE_TOP | FACE_LEFT | FACE_RIGHT):
-        ADDF(0,0,0, 1,0,0, 0,0,1);
-        ADDF(0,0,1, 1,0,0, 1,0,1);
-
-        ADDF(0,1,0, 0,1,1, 1,1,0);
-        ADDF(0,1,1, 1,1,1, 1,1,0);
-
-        ADDF(0,0,0, 0,0,1, 0,1,0);
-        ADDF(0,1,0, 0,0,1, 0,1,1);
-
-        ADDF(1,0,0, 1,1,0, 1,0,1);
-        ADDF(1,1,0, 1,1,1, 1,0,1);
-        break;
-
-    }
-
-    if ((faces & FACE_FRONT) != 0) {
-        ADDF(0,0,0, 0,1,0, 1,0,0);
-        ADDF(0,1,0, 1,1,0, 1,0,0);
-    }
-
-    if ((faces & FACE_BACK) != 0) {
-        ADDF(0,0,1, 1,0,1, 0,1,1);
-        ADDF(0,1,1, 1,0,1, 1,1,1);
-    }
-
-}
-
-static uint32_t
-get_face(bitmap *bm, unsigned int x, unsigned int y, uint8_t transparent)
-{
-    uint32_t faces = 0;
-    if (bm->data[(y * bm->width) + x] < transparent) {
-        /* only opaque squares have faces */
-        faces = FACE_TOP | FACE_BOT |
-                FACE_FRONT | FACE_BACK |
-                FACE_LEFT | FACE_RIGHT;
-
-        if ((x > 0) && (bm->data[(y * bm->width) + (x - 1)] < transparent)) {
-            faces = faces & ~FACE_LEFT;
-        }
-
-        if ((x < (bm->width - 1)) &&
-            (bm->data[(y * bm->width) + (x + 1)] < transparent)) {
-            faces = faces & ~FACE_RIGHT;
-        }
-
-        if ((y > 0) &&
-            (bm->data[((y - 1) * bm->width) + x ] < transparent)) {
-            faces = faces & ~FACE_TOP;
-        }
-
-        if ((y < (bm->height - 1)) &&
-            (bm->data[((y + 1) * bm->width) + x ] < transparent)) {
-            faces = faces & ~FACE_BOT;
-        }
-
-
-    }
-    return faces;
-}
 
 
 static uint32_t find_pnt(struct mesh *mesh, struct pnt *pnt)
@@ -1026,6 +611,53 @@ static void verify_mesh(struct mesh *mesh)
 }
 
 
+
+
+
+/* exported method docuemnted in mesh.h */
+bool
+mesh_add_facet(struct mesh *mesh,
+          float vx0,float vy0, float vz0,
+          float vx1,float vy1, float vz1,
+          float vx2,float vy2, float vz2)
+{
+    struct facet *newfacet;
+    bool degenerate = false;
+
+    if ((mesh->fcount + 1) > mesh->falloc) {
+        /* array needs extending */
+        mesh->f = realloc(mesh->f, (mesh->falloc + 1000) * sizeof(struct facet));
+        mesh->falloc += 1000;
+    }
+
+    newfacet = mesh->f + mesh->fcount;
+
+    newfacet->v[0].x = vx0;
+    newfacet->v[0].y = vy0;
+    newfacet->v[0].z = vz0;
+
+    newfacet->v[1].x = vx1;
+    newfacet->v[1].y = vy1;
+    newfacet->v[1].z = vz1;
+
+    newfacet->v[2].x = vx2;
+    newfacet->v[2].y = vy2;
+    newfacet->v[2].z = vz2;
+
+    degenerate = pnt_normal(&newfacet->n,
+                            &newfacet->v[0],
+                            &newfacet->v[1],
+                            &newfacet->v[2]);
+
+    /* do not add degenerate facets */
+    if (!degenerate) {
+        mesh->fcount++;
+    }
+
+    return degenerate;
+}
+
+
 /* exported method docuemnted in mesh.h */
 struct mesh *new_mesh(void)
 {
@@ -1040,28 +672,30 @@ struct mesh *new_mesh(void)
 bool
 mesh_from_bitmap(struct mesh *mesh, bitmap *bm, options *options)
 {
-    unsigned int row_loop;
-    unsigned int col_loop;
-
+    unsigned int yloop;
+    unsigned int xloop;
+    unsigned int zloop;
     uint32_t faces;
+    meshgenerator *meshgen;
 
     mesh->height = bm->height;
     mesh->width = bm->width;
 
-    for (row_loop = 0; row_loop < bm->height; row_loop++) {
-        for (col_loop = 0; col_loop < bm->width; col_loop++) {
-            faces = get_face(bm, col_loop, row_loop, options->transparent);
+    if ((options->finish == FINISH_SMOOTH) && 
+        (options->levels == 1)) {
+        meshgen = &mesh_gen_marching_squares;
+    } else {
+        meshgen = &mesh_gen_cube;
+    }
 
-            if (options->finish == FINISH_RAW) {
-                output_cube(mesh, col_loop, -(float)row_loop, 0, 
-                            1, 1, 1, faces);
-            } else {
-                output_marching_squares(mesh, col_loop, -(float)row_loop, 0,
-                                        1, 1, 1, faces);
+    for (zloop = 0; zloop < options->levels; zloop++) {
+        for (yloop = 0; yloop < bm->height; yloop++) {
+            for (xloop = 0; xloop < bm->width; xloop++) {
+                faces = mesh_gen_get_face(bm, xloop, yloop, zloop, options);
+                meshgen(mesh, xloop, -(float)yloop, zloop, 1, 1, 1, faces);
             }
         }
     }
-
     return true;
 }
 

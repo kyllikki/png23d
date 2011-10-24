@@ -38,7 +38,7 @@ set_options(int argc, char **argv)
 
     options->type = OUTPUT_ASTL;
     options->finish = FINISH_RAW;
-    options->transparent = 128;
+    options->transparent = 255;
     options->levels = 1;
     options->width = 0.0;
     options->height = 0.0;
