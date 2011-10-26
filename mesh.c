@@ -21,6 +21,7 @@
 #include "bitmap.h"
 #include "mesh.h"
 #include "mesh_gen.h"
+#include "mesh_bloom.h"
 
 
 #define DUMP_SVG_SIZE 500
@@ -293,42 +294,6 @@ debug_mesh_fini(struct mesh *mesh, unsigned int start)
 
 
 
-static uint32_t find_pnt(struct mesh *mesh, struct pnt *pnt)
-{
-    uint32_t idx;
-    for (idx = 0; idx < mesh->pcount; idx++) {
-        if ((mesh->p[idx].pnt.x == pnt->x) &&
-            (mesh->p[idx].pnt.y == pnt->y) &&
-            (mesh->p[idx].pnt.z == pnt->z)) {
-            break;
-        }
-
-    }
-    return idx;
-}
-
-static idxpnt
-add_pnt(struct mesh *mesh, struct pnt *npnt)
-{
-    uint32_t idx;
-
-    idx = find_pnt(mesh, npnt);
-    if (idx == mesh->pcount) {
-        /* not in array already */
-        if ((mesh->pcount + 1) > mesh->palloc) {
-            /* pnt array needs extending */
-            mesh->p = realloc(mesh->p,
-                              (mesh->palloc + 1000) *
-                              sizeof(struct vertex));
-            mesh->palloc += 1000;
-        }
-
-        mesh->p[mesh->pcount].pnt = *npnt;
-        mesh->p[mesh->pcount].fcount = 0;
-        mesh->pcount++;
-    }
-    return idx;
-}
 
 
 /* determinae if a vertex is topoligcally a removal candidate  */
@@ -703,6 +668,7 @@ mesh_from_bitmap(struct mesh *mesh, bitmap *bm, options *options)
 void free_mesh(struct mesh *mesh)
 {
     debug_mesh_fini(mesh, 4);
+    free(mesh->bloom_table);
     free(mesh->f);
 }
 
@@ -711,19 +677,25 @@ bool
 index_mesh(struct mesh *mesh)
 {
     unsigned int floop;
+    idxpnt p0, p1, p2;
+
+    mesh_bloom_init(mesh, mesh->fcount, 8);
 
     /* manufacture pointlist and update indexed geometry */
     for (floop = 0; floop < mesh->fcount; floop++) {
-        idxpnt p0, p1, p2;
+
         /* update facet with indexed points */
-        p0 = mesh->f[floop].i[0] = add_pnt(mesh, &mesh->f[floop].v[0]);
-        p1 = mesh->f[floop].i[1] = add_pnt(mesh, &mesh->f[floop].v[1]);
-        p2 = mesh->f[floop].i[2] = add_pnt(mesh, &mesh->f[floop].v[2]);
+        p0 = mesh->f[floop].i[0] = mesh_add_pnt(mesh, &mesh->f[floop].v[0]);
+        p1 = mesh->f[floop].i[1] = mesh_add_pnt(mesh, &mesh->f[floop].v[1]);
+        p2 = mesh->f[floop].i[2] = mesh_add_pnt(mesh, &mesh->f[floop].v[2]);
 
         mesh->p[p0].facets[mesh->p[p0].fcount++] = &mesh->f[floop];
         mesh->p[p1].facets[mesh->p[p1].fcount++] = &mesh->f[floop];
         mesh->p[p2].facets[mesh->p[p2].fcount++] = &mesh->f[floop];
     }
+
+    fprintf(stderr, "bloom saved %d (%d%%) of %d linear searches\n", (mesh->fcount *3) - mesh->find_count, (((mesh->fcount *3) - mesh->find_count) * 100) / (mesh->fcount *3), (mesh->fcount * 3));
+    fprintf(stderr, "bloom caused %d (%d%%) unessessary linear searches out of %d\n", mesh->bloom_miss, (mesh->bloom_miss * 100) / (mesh->find_count), mesh->find_count);
 
     return true;;
 }

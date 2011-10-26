@@ -23,7 +23,6 @@
 #include "mesh_gen.h"
 
 
-
 enum faces {
     FACE_LEFT = 1,
     FACE_RIGHT = 2,

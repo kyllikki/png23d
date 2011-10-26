@@ -59,8 +59,19 @@ struct mesh {
     /* meta info */
     uint32_t width; /* conversion source width */
     uint32_t height; /* conversion source height */
+    uint32_t cubes; /**< number of cubes with at least one face */
 
-    uint32_t cubes; /**< number of cubes with at lease one face */
+    /* bloom filter */
+    uint8_t *bloom_table; /* table for bloom filter */
+    unsigned int bloom_table_entries; /* Number of entries (bits) it bloom */
+    unsigned int bloom_iterations; /* number of times the hash is applied with
+                                    * a differnt salt value (sometimes referred
+                                    * to as the number of functions?) 
+                                    */
+
+    unsigned int bloom_miss;
+
+    unsigned int find_count; /* number of linear lookups */
 
     /* debug */
     int dumpno;
