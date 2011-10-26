@@ -101,10 +101,10 @@ bool mesh_from_bitmap(struct mesh *mesh, bitmap *bm, options *options);
 void free_mesh(struct mesh *mesh);
 
 /** update the mesh geometry index representation */
-bool index_mesh(struct mesh *mesh);
+bool index_mesh(struct mesh *mesh, unsigned int bloom_complexity);
 
 /** remove uneccessary verticies */
-bool simplify_mesh(struct mesh *mesh);
+bool simplify_mesh(struct mesh *mesh, unsigned int bloom_complexity);
 
 /** initialise debugging on mesh */
 void debug_mesh_init(struct mesh *mesh, const char* filename);

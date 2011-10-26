@@ -4,8 +4,8 @@
  * Licenced under the MIT License,
  *                http://www.opensource.org/licenses/mit-license.php
  *
- * This file is part of png23d. 
- * 
+ * This file is part of png23d.
+ *
  * output options.
  */
 
@@ -34,6 +34,10 @@ typedef struct options {
 
     unsigned int transparent; /* the grey level value at which object is transparent */
     unsigned int levels; /* the number of levels to quantise into below transparent */
+
+    unsigned int bloom_complexity; /* The size and number of iterations used
+                                    * for the bloom filter
+                                    */
 
     char *infile; /* input filename */
     char *outfile; /* output filename */

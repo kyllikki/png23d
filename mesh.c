@@ -26,6 +26,8 @@
 
 #define DUMP_SVG_SIZE 500
 
+/* Using PRId64 yeilds a compile error if used in string concatination */
+#define D64F "%zd"
 
 /* are two points the same location */
 static inline bool
@@ -674,12 +676,12 @@ void free_mesh(struct mesh *mesh)
 
 /* exported method docuemnted in mesh.h */
 bool
-index_mesh(struct mesh *mesh)
+index_mesh(struct mesh *mesh, unsigned int bloom_complexity)
 {
     unsigned int floop;
     idxpnt p0, p1, p2;
 
-    mesh_bloom_init(mesh, mesh->fcount, 2);
+    mesh_bloom_init(mesh, mesh->fcount * bloom_complexity, bloom_complexity * 4);
 
     /* manufacture pointlist and update indexed geometry */
     for (floop = 0; floop < mesh->fcount; floop++) {
@@ -695,9 +697,11 @@ index_mesh(struct mesh *mesh)
     }
 
     fprintf(stderr, "bloom saved %d (%d%%) of %d linear searches\n", (mesh->fcount *3) - mesh->find_count, (((mesh->fcount *3) - mesh->find_count) * 100) / (mesh->fcount *3), (mesh->fcount * 3));
-    fprintf(stderr, "bloom fasiled to stop %d (%d%%) linear searches out of %d\n", mesh->bloom_miss, (mesh->bloom_miss * 100) / (mesh->find_count), mesh->find_count);
+    fprintf(stderr, "bloom failed to stop %d (%d%%) linear searches out of %d\n", mesh->bloom_miss, (mesh->bloom_miss * 100) / (mesh->find_count), mesh->find_count);
 
-    fprintf(stderr,"Average linear search cost %d\n",
+
+
+    fprintf(stderr, "Average linear search cost " D64F "\n",
             mesh->find_cost / mesh->find_count);
 
     fprintf(stderr, "final number of verticies indexed %u\n", mesh->pcount);
@@ -714,14 +718,14 @@ index_mesh(struct mesh *mesh)
  * merge second vertex into first
  */
 bool
-simplify_mesh(struct mesh *mesh)
+simplify_mesh(struct mesh *mesh, unsigned int bloom_complexity)
 {
     unsigned int vloop = 0;
     unsigned int vtx1;
 
     /* ensure index tables are up to date */
     if (mesh->p == NULL) {
-        index_mesh(mesh);
+        index_mesh(mesh, bloom_complexity);
     }
 
     dump_mesh_simplify_init(mesh);

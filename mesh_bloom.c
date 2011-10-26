@@ -22,6 +22,7 @@
  */
 
 #include <stdint.h>
+#include <inttypes.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -68,6 +69,7 @@ static const unsigned int salts[] = {
     0xa27e2a58, 0x66866fc5, 0x12519ce7, 0x437a8456,
 };
 
+/* exported interface documented in mesh_bloom.h */
 bool
 mesh_bloom_init(struct mesh *mesh,
                 unsigned int entries,
@@ -76,15 +78,17 @@ mesh_bloom_init(struct mesh *mesh,
     /* The salt table size imposes a limit on the number of iterations which
      * can be applied
      */
-
     if (iterations > sizeof(salts) / sizeof(*salts)) {
         return false;
     }
 
+    /* Always burn at least 256K for the table */
+    if (entries < (256 * 1024 * 8)) {
+        entries = (256 * 1024 * 8);
+    }
+
     /* Allocate table, each entry is one bit, packed into bytes. */
-
     mesh->bloom_table = calloc(1, (entries + 7) / 8);
-
     if (mesh->bloom_table == NULL) {
         return false;
     }
@@ -95,28 +99,24 @@ mesh_bloom_init(struct mesh *mesh,
     return true;
 }
 
-/*
-(int) α * ((int) (abs(X) * Q)) / Q +
-      β * ((int) (abs(Y) * Q)) / Q +
-      γ * ((int) (abs(Z) * Q)) / Q
-
-(int) is the conversion to integer - the fractional part of the float is
-removed (in current implementation DWORD is used),
-
-α,β,γ are coefficients of hash function (originally used 3, 5 and 7),
-
-Q defines sensitivity (numerical error elimination) - for 3 decimal digits set
-Q = 1000.0,
-
-
+/** hash a pnt for the bloom filter.
+ *
+ * This implementation *SUCKS*
  */
 static inline unsigned int
 mesh_bloom_hash(struct pnt *pnt)
 {
     unsigned int hash;
+
     hash = (3 * ((unsigned int)(abs(pnt->x) * 1000.0))) / 100;
     hash += (257 * ((unsigned int)(abs(pnt->y) * 1000.0)) / 100);
     hash += (653 * ((unsigned int)(abs(pnt->z) * 1000.0)) / 100);
+
+    /*
+    uint32_t *upnt = (uint32_t *)pnt;
+    hash = *upnt ^ ((*(upnt + 1)) << 10) ^ ((*(upnt + 1)) << 20);
+    */
+
     return hash;
 }
 
@@ -127,7 +127,7 @@ mesh_bloom_insert(struct mesh *mesh, struct pnt *pnt)
     unsigned int subhash;
     unsigned int index;
     unsigned int iloop; /* iteration loop */
-    uint8_t b;
+    uint8_t entry;
 
     /* Generate hash of the point to insert */
     hash = mesh_bloom_hash(pnt);
@@ -146,10 +146,10 @@ mesh_bloom_insert(struct mesh *mesh, struct pnt *pnt)
 
         /* Insert into the table.
          * index / 8 finds the byte index of the table,
-         * index % 8 gives the bit index within that byte to set. */
-
-        b = (uint8_t) (1 << (index % 8));
-        mesh->bloom_table[index / 8] |= b;
+         * index % 8 gives the bit index within that byte to set. 
+         */
+        entry = (uint8_t) (1 << (index % 8));
+        mesh->bloom_table[index / 8] |= entry;
     }
 }
 
@@ -160,68 +160,79 @@ mesh_bloom_query(struct mesh *mesh, struct pnt *pnt)
     unsigned int subhash;
     unsigned int index;
     unsigned int iloop;
-    unsigned char b;
+    unsigned char entry;
     int bit;
 
     /* Generate hash of the value to lookup */
-
     hash = mesh_bloom_hash(pnt);
 
     /* Generate multiple unique hashes by XORing with values in the
      * salt table. */
-
     for (iloop = 0; iloop < mesh->bloom_iterations; ++iloop) {
 
         /* Generate a unique hash */
-
         subhash = hash ^ salts[iloop];
 
         /* Find the index into the table to test */
-
         index = subhash % mesh->bloom_table_entries;
 
         /* The byte at index / 8 holds the value to test */
-
-        b = mesh->bloom_table[index / 8];
+        entry = mesh->bloom_table[index / 8];
         bit = 1 << (index % 8);
 
         /* Test if the particular bit is set; if it is not set,
          * this value can not have been inserted. */
-
-        if ((b & bit) == 0) {
+        if ((entry & bit) == 0) {
             return false;
         }
     }
 
-    /* All necessary bits were set.  This may indicate that the value
-     * was inserted, or the values could have been set through other
-     * insertions. */
-
+    /* All necessary bits were set.  This may indicate that the value was
+     * inserted, or a collision has occoured and the values were set by other
+     * insertions.
+     */
     return true;
 }
 
-
+/** Find a point in the vertex list.
+ *
+ * Search through the unsorted vertex list for a vertex at a given location.
+ * Because of the locality of vertices being added a backward search requires
+ * vastly fewer comparisons.
+ *
+ * In all tests backwards search reduced the mean number of comparisons before
+ * a match. One representative test case this approach reduced the mean number
+ * of comparisons before a match from 67803 to 606 or less than 1% of the
+ * initial comparison costs.
+ *
+ * @param mesh The mesh to search for vertices within.
+ * @param pnt The 3d point to search for.
+ * @return The vertex index if it is found or the next place to insert one.
+ */
 static inline uint32_t
 find_pnt(struct mesh *mesh, struct pnt *pnt)
 {
-    uint32_t idx;
+    uint32_t idx = mesh->pcount;
 
+    mesh->find_count++;
 
-    for (idx = 0; idx < mesh->pcount; idx++) {
+    while (idx > 0) {
+        idx--;
+
         if ((mesh->p[idx].pnt.x == pnt->x) &&
             (mesh->p[idx].pnt.y == pnt->y) &&
             (mesh->p[idx].pnt.z == pnt->z)) {
-            break;
+            mesh->find_cost += (mesh->pcount - idx);
+            return idx;
         }
-
     }
 
-    mesh->find_count++;
-    mesh->find_cost+=idx;
-
+    idx = mesh->pcount;
+    mesh->find_cost += idx;
     return idx;
 }
 
+/* exported interface documented in mesh_bloom.h */
 idxpnt
 mesh_add_pnt(struct mesh *mesh, struct pnt *npnt)
 {

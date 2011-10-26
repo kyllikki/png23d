@@ -36,6 +36,7 @@ set_options(int argc, char **argv)
 
     options = calloc(1, sizeof(struct options));
 
+    /* default values */
     options->type = OUTPUT_ASTL;
     options->finish = FINISH_RAW;
     options->transparent = 255;
@@ -43,8 +44,10 @@ set_options(int argc, char **argv)
     options->width = 0.0;
     options->height = 0.0;
     options->depth = 1.0;
+    options->bloom_complexity = 2;
 
-    while ((opt = getopt(argc, argv, "vf:w:d:h:m:l:q:t:O:")) != -1) {
+    /* parse comamndline options */
+    while ((opt = getopt(argc, argv, "vf:w:d:h:m:l:q:t:O:b:")) != -1) {
         switch (opt) {
 
         case 'f': /* output finish */
@@ -117,6 +120,14 @@ set_options(int argc, char **argv)
                 fprintf(stderr, "Version 1.0\n");
                 exit(EXIT_SUCCESS);
 
+
+        case 'b': /* bloom filter complexity */
+            options->bloom_complexity = strtoul(optarg, NULL, 0);
+            if (options->bloom_complexity > 16) {
+                fprintf(stderr, "bloom complexity must be between 0 and 16\n");
+                exit(EXIT_FAILURE);
+            }
+            break;
 
         default: /* '?' */
             fprintf(stderr,

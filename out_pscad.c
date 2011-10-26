@@ -49,9 +49,9 @@ bool output_flat_scad_polyhedron(bitmap *bm, int fd, options *options)
     }
 
     if (options->optimise > 0) {
-        simplify_mesh(mesh);
+        simplify_mesh(mesh, options->bloom_complexity);
     } else {
-        index_mesh(mesh);
+        index_mesh(mesh, options->bloom_complexity);
     }
 
     xoff = (bm->width / 2);

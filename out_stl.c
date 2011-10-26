@@ -60,7 +60,7 @@ bool output_flat_stl(bitmap *bm, int fd, options *options)
     }
 
     if (options->optimise > 0) {
-        simplify_mesh(mesh);
+        simplify_mesh(mesh, options->bloom_complexity);
     }
 
     memset(header, 0, 80);
@@ -140,7 +140,7 @@ bool output_flat_astl(bitmap *bm, int fd, options *options)
     }
 
     if (options->optimise > 0) {
-        simplify_mesh(mesh);
+        simplify_mesh(mesh, options->bloom_complexity);
     }
 
     xscale = options->width / bm->width;
