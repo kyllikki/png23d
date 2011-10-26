@@ -72,6 +72,8 @@ struct mesh {
     unsigned int bloom_miss;
 
     unsigned int find_count; /* number of linear lookups */
+    int64_t find_cost;
+
 
     /* debug */
     int dumpno;

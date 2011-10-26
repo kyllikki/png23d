@@ -243,7 +243,7 @@ dump_mesh_simplify_fini(struct mesh *mesh)
     fprintf(mesh->dumpfile,"</table>");
 }
 
-static void 
+static void
 debug_mesh_fini(struct mesh *mesh, unsigned int start)
 {
     unsigned int floop;
@@ -646,7 +646,7 @@ mesh_from_bitmap(struct mesh *mesh, bitmap *bm, options *options)
     mesh->height = bm->height;
     mesh->width = bm->width;
 
-    if ((options->finish == FINISH_SMOOTH) && 
+    if ((options->finish == FINISH_SMOOTH) &&
         (options->levels == 1)) {
         meshgen = &mesh_gen_marching_squares;
     } else {
@@ -679,7 +679,7 @@ index_mesh(struct mesh *mesh)
     unsigned int floop;
     idxpnt p0, p1, p2;
 
-    mesh_bloom_init(mesh, mesh->fcount, 8);
+    mesh_bloom_init(mesh, mesh->fcount, 2);
 
     /* manufacture pointlist and update indexed geometry */
     for (floop = 0; floop < mesh->fcount; floop++) {
@@ -695,7 +695,12 @@ index_mesh(struct mesh *mesh)
     }
 
     fprintf(stderr, "bloom saved %d (%d%%) of %d linear searches\n", (mesh->fcount *3) - mesh->find_count, (((mesh->fcount *3) - mesh->find_count) * 100) / (mesh->fcount *3), (mesh->fcount * 3));
-    fprintf(stderr, "bloom caused %d (%d%%) unessessary linear searches out of %d\n", mesh->bloom_miss, (mesh->bloom_miss * 100) / (mesh->find_count), mesh->find_count);
+    fprintf(stderr, "bloom fasiled to stop %d (%d%%) linear searches out of %d\n", mesh->bloom_miss, (mesh->bloom_miss * 100) / (mesh->find_count), mesh->find_count);
+
+    fprintf(stderr,"Average linear search cost %d\n",
+            mesh->find_cost / mesh->find_count);
+
+    fprintf(stderr, "final number of verticies indexed %u\n", mesh->pcount);
 
     return true;;
 }

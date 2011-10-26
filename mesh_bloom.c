@@ -12,7 +12,7 @@
  * including:
  *
  * - Simon Howard C algorithms (licenced under ISC licence)
- * - Lars Wirzenius publib (which he said I could licence as I saw fit ;-) 
+ * - Lars Wirzenius publib (which he said I could licence as I saw fit ;-)
  * - The paper "Hash Function for Triangular Mesh Reconstruction" by Václav
  *       Skala, Jan Hrádek, Martin Kuchař (Department of Computer Science and
  *       Engineering, University of West Bohemia)
@@ -68,9 +68,9 @@ static const unsigned int salts[] = {
     0xa27e2a58, 0x66866fc5, 0x12519ce7, 0x437a8456,
 };
 
-bool 
-mesh_bloom_init(struct mesh *mesh, 
-                unsigned int entries, 
+bool
+mesh_bloom_init(struct mesh *mesh,
+                unsigned int entries,
                 unsigned int iterations)
 {
     /* The salt table size imposes a limit on the number of iterations which
@@ -96,8 +96,8 @@ mesh_bloom_init(struct mesh *mesh,
 }
 
 /*
-(int) α * ((int) (abs(X) * Q)) / Q + 
-      β * ((int) (abs(Y) * Q)) / Q +  
+(int) α * ((int) (abs(X) * Q)) / Q +
+      β * ((int) (abs(Y) * Q)) / Q +
       γ * ((int) (abs(Z) * Q)) / Q
 
 (int) is the conversion to integer - the fractional part of the float is
@@ -110,7 +110,7 @@ Q = 1000.0,
 
 
  */
-static inline unsigned int 
+static inline unsigned int
 mesh_bloom_hash(struct pnt *pnt)
 {
     unsigned int hash;
@@ -120,7 +120,7 @@ mesh_bloom_hash(struct pnt *pnt)
     return hash;
 }
 
-static void 
+static void
 mesh_bloom_insert(struct mesh *mesh, struct pnt *pnt)
 {
     unsigned int hash;
@@ -133,7 +133,7 @@ mesh_bloom_insert(struct mesh *mesh, struct pnt *pnt)
     hash = mesh_bloom_hash(pnt);
 
     /* Generate multiple unique hashes by XORing with values in the
-     * salt table. 
+     * salt table.
      */
 
     for (iloop = 0; iloop < mesh->bloom_iterations; ++iloop) {
@@ -144,7 +144,7 @@ mesh_bloom_insert(struct mesh *mesh, struct pnt *pnt)
         /* Find the index into the table */
         index = subhash % mesh->bloom_table_entries;
 
-        /* Insert into the table.  
+        /* Insert into the table.
          * index / 8 finds the byte index of the table,
          * index % 8 gives the bit index within that byte to set. */
 
@@ -153,7 +153,7 @@ mesh_bloom_insert(struct mesh *mesh, struct pnt *pnt)
     }
 }
 
-static bool 
+static bool
 mesh_bloom_query(struct mesh *mesh, struct pnt *pnt)
 {
     unsigned int hash;
@@ -201,9 +201,12 @@ mesh_bloom_query(struct mesh *mesh, struct pnt *pnt)
 }
 
 
-static uint32_t find_pnt(struct mesh *mesh, struct pnt *pnt)
+static inline uint32_t
+find_pnt(struct mesh *mesh, struct pnt *pnt)
 {
     uint32_t idx;
+
+
     for (idx = 0; idx < mesh->pcount; idx++) {
         if ((mesh->p[idx].pnt.x == pnt->x) &&
             (mesh->p[idx].pnt.y == pnt->y) &&
@@ -212,6 +215,10 @@ static uint32_t find_pnt(struct mesh *mesh, struct pnt *pnt)
         }
 
     }
+
+    mesh->find_count++;
+    mesh->find_cost+=idx;
+
     return idx;
 }
 
@@ -227,7 +234,6 @@ mesh_add_pnt(struct mesh *mesh, struct pnt *npnt)
         idx = mesh->pcount; /* not already in list */
     } else {
         idx = find_pnt(mesh, npnt);
-        mesh->find_count++;
 
         if (idx == mesh->pcount) {
             /* seems the bloom failed to filter this one */
