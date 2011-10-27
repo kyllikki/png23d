@@ -26,9 +26,6 @@
 
 #define DUMP_SVG_SIZE 500
 
-/* Using PRId64 yeilds a compile error if used in string concatination */
-#define D64F "%zd"
-
 /* are two points the same location */
 static inline bool
 eqpnt(struct pnt *p0, struct pnt *p1)
@@ -648,6 +645,9 @@ mesh_from_bitmap(struct mesh *mesh, bitmap *bm, options *options)
     mesh->height = bm->height;
     mesh->width = bm->width;
 
+    INFO("Generating mesh from bitmap of size %dx%d with %d levels\n",
+         bm->width, bm->height, options->levels);
+
     if ((options->finish == FINISH_SMOOTH) &&
         (options->levels == 1)) {
         meshgen = &mesh_gen_marching_squares;
@@ -681,7 +681,12 @@ index_mesh(struct mesh *mesh, unsigned int bloom_complexity)
     unsigned int floop;
     idxpnt p0, p1, p2;
 
-    mesh_bloom_init(mesh, mesh->fcount * bloom_complexity, bloom_complexity * 4);
+    /* initialise the bloom filter with enough entries for three vertex per
+     * point and the complexity parameter (ok how many functions get run)
+     */
+    mesh_bloom_init(mesh,
+                    mesh->fcount * bloom_complexity * 3,
+                    bloom_complexity * 2);
 
     /* manufacture pointlist and update indexed geometry */
     for (floop = 0; floop < mesh->fcount; floop++) {
@@ -695,16 +700,6 @@ index_mesh(struct mesh *mesh, unsigned int bloom_complexity)
         mesh->p[p1].facets[mesh->p[p1].fcount++] = &mesh->f[floop];
         mesh->p[p2].facets[mesh->p[p2].fcount++] = &mesh->f[floop];
     }
-
-    fprintf(stderr, "bloom saved %d (%d%%) of %d linear searches\n", (mesh->fcount *3) - mesh->find_count, (((mesh->fcount *3) - mesh->find_count) * 100) / (mesh->fcount *3), (mesh->fcount * 3));
-    fprintf(stderr, "bloom failed to stop %d (%d%%) linear searches out of %d\n", mesh->bloom_miss, (mesh->bloom_miss * 100) / (mesh->find_count), mesh->find_count);
-
-
-
-    fprintf(stderr, "Average linear search cost " D64F "\n",
-            mesh->find_cost / mesh->find_count);
-
-    fprintf(stderr, "final number of verticies indexed %u\n", mesh->pcount);
 
     return true;;
 }

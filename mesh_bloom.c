@@ -15,10 +15,15 @@
  * - Lars Wirzenius publib (which he said I could licence as I saw fit ;-)
  * - The paper "Hash Function for Triangular Mesh Reconstruction" by Václav
  *       Skala, Jan Hrádek, Martin Kuchař (Department of Computer Science and
- *       Engineering, University of West Bohemia)
+ *       Engineering, University of West Bohemia) which provided inspiration
+ *       for hash functions used in early implementations. Turns out the the
+ *       simple FNV outperformed them in the end.
+ * - Fowler/Noll/Vo hash From its reference implementation which is *not*
+ *       subject to my copyright and is in the public domain.
  *
- * These served as sources of code snippets and algorihms but none of them are
- * responsible for this implementation which is my fault.
+ * These served as sources of code snippets and algorihms but none of them
+ * (except the FNV hash implementation) are responsible for this specific
+ * implementation which is my fault.
  */
 
 #include <stdint.h>
@@ -99,25 +104,38 @@ mesh_bloom_init(struct mesh *mesh,
     return true;
 }
 
-/** hash a pnt for the bloom filter.
+
+/** perform a 32 bit Fowler/Noll/Vo hash on a vetex point
  *
- * This implementation *SUCKS*
+ * Direct from reference code which has
+ *
+ * Please do not copyright this code.  This code is in the public domain.
  */
-static inline unsigned int
+static inline uint32_t
 mesh_bloom_hash(struct pnt *pnt)
 {
-    unsigned int hash;
-
-    hash = (3 * ((unsigned int)(abs(pnt->x) * 1000.0))) / 100;
-    hash += (257 * ((unsigned int)(abs(pnt->y) * 1000.0)) / 100);
-    hash += (653 * ((unsigned int)(abs(pnt->z) * 1000.0)) / 100);
+    uint32_t hval = 0; /* recommended 32 bit FNV-1 hash init */
+    unsigned char *bp = (unsigned char *)pnt;	/* start of buffer */
+    unsigned char *be = bp + sizeof(struct pnt);/* beyond end of buffer */
 
     /*
-    uint32_t *upnt = (uint32_t *)pnt;
-    hash = *upnt ^ ((*(upnt + 1)) << 10) ^ ((*(upnt + 1)) << 20);
-    */
+     * FNV-1 hash each octet in the buffer
+     */
+    while (bp < be) {
 
-    return hash;
+        /* multiply by the 32 bit FNV magic prime mod 2^32 */
+
+        /*
+         * 32 bit magic FNV-1 prime 0x01000193
+         */
+        hval += (hval<<1) + (hval<<4) + (hval<<7) + (hval<<8) + (hval<<24);
+
+        /* xor the bottom with the current octet */
+        hval ^= (uint32_t)*bp++;
+    }
+
+    /* return our new hash value */
+    return hval;
 }
 
 static void
@@ -146,7 +164,7 @@ mesh_bloom_insert(struct mesh *mesh, struct pnt *pnt)
 
         /* Insert into the table.
          * index / 8 finds the byte index of the table,
-         * index % 8 gives the bit index within that byte to set. 
+         * index % 8 gives the bit index within that byte to set.
          */
         entry = (uint8_t) (1 << (index % 8));
         mesh->bloom_table[index / 8] |= entry;

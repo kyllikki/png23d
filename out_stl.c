@@ -22,6 +22,51 @@
 #include "mesh.h"
 #include "out_stl.h"
 
+
+static struct mesh *stl_mesh(bitmap *bm, int fd, options *options)
+{
+    struct mesh *mesh;
+
+    mesh = new_mesh();
+    if (mesh == NULL) {
+        fprintf(stderr,"unable to create mesh\n");
+        return NULL;
+    }
+
+    debug_mesh_init(mesh, options->meshdebug);
+
+    if (mesh_from_bitmap(mesh, bm, options) == false) {
+        fprintf(stderr,"unable to convert bitmap to mesh\n");
+        free_mesh(mesh);
+        return NULL;
+    }
+
+    if (options->optimise > 0) {
+        uint32_t start_vcount = mesh->fcount * 3; /* each facet has 3 vertex */
+
+        INFO("Commencing mesh simplification on %d facets\n", mesh->fcount);
+        INFO("Indexing %d verticies\n", start_vcount);
+        simplify_mesh(mesh, options->bloom_complexity);
+
+        INFO("Bloom filter prevented %d (%d%%) lookups\n",
+             start_vcount - mesh->find_count,
+             ((start_vcount - mesh->find_count) * 100) / start_vcount);
+        INFO("Bloom filter had %d (%d%%) false positives\n",
+             mesh->bloom_miss,
+             (mesh->bloom_miss * 100) / (mesh->find_count));
+        INFO("Indexing required %d lookups with mean search cost " D64F " comparisons\n",
+             mesh->find_count,
+             mesh->find_cost / mesh->find_count);
+
+        INFO("Number of unique verticies in result index %u\n", mesh->pcount);
+
+        INFO("Number of facets in result %u\n", mesh->fcount);
+    }
+
+    return mesh;
+}
+
+
 /* binary stl output
  *
  * UINT8[80] – Header
@@ -46,21 +91,9 @@ bool output_flat_stl(bitmap *bm, int fd, options *options)
 
     assert(sizeof(struct pnt) == 12); /* this is foul and nasty */
 
-    mesh = new_mesh();
+    mesh = stl_mesh(bm, fd, options);
     if (mesh == NULL) {
-        fprintf(stderr,"unable to create mesh\n");
         return false;
-    }
-
-    debug_mesh_init(mesh, options->meshdebug);
-
-    if (mesh_from_bitmap(mesh, bm, options) == false) {
-        fprintf(stderr,"unable to convert bitmap to mesh\n");
-        return false;
-    }
-
-    if (options->optimise > 0) {
-        simplify_mesh(mesh, options->bloom_complexity);
     }
 
     memset(header, 0, 80);
@@ -121,34 +154,21 @@ bool output_flat_astl(bitmap *bm, int fd, options *options)
     struct mesh *mesh;
     unsigned int floop;
     FILE *outf;
-    float xscale;
+
+    mesh = stl_mesh(bm, fd, options);
+    if (mesh == NULL) {
+        return false;
+    }
 
     outf = fdopen(dup(fd), "w");
-
-    mesh = new_mesh();
-    if (mesh == NULL) {
-        fprintf(stderr,"unable to create mesh\n");
-        return false;
-    }
-
-    debug_mesh_init(mesh, options->meshdebug);
-
-    if (mesh_from_bitmap(mesh, bm, options) == false) {
-        fprintf(stderr,"unable to convert bitmap to mesh\n");
-        free_mesh(mesh);
-        return false;
-    }
-
-    if (options->optimise > 0) {
-        simplify_mesh(mesh, options->bloom_complexity);
-    }
-
-    xscale = options->width / bm->width;
 
     fprintf(outf, "solid png2stl_Model\n");
 
     for (floop = 0; floop < mesh->fcount; floop++) {
-        output_stl_tri(outf, mesh->f + floop, xscale, options->depth);
+        output_stl_tri(outf,
+                       mesh->f + floop,
+                       options->width / bm->width,
+                       options->depth / options->levels );
     }
 
     fprintf(outf, "endsolid png2stl_Model\n");

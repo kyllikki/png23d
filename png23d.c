@@ -19,9 +19,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <time.h>
 
 #include "option.h"
-
 #include "bitmap.h"
 #include "out_pgm.h"
 #include "out_scad.h"
@@ -35,10 +35,17 @@ set_options(int argc, char **argv)
     options *options;
 
     options = calloc(1, sizeof(struct options));
+    if (options == NULL) {
+        return NULL;
+    }
+
+    /* keep record of start time */
+    options->start_time = time(NULL);
 
     /* default values */
     options->type = OUTPUT_ASTL;
-    options->finish = FINISH_RAW;
+    options->finish = FINISH_SMOOTH;
+    options->optimise = 1;
     options->transparent = 255;
     options->levels = 1;
     options->width = 0.0;
@@ -47,7 +54,7 @@ set_options(int argc, char **argv)
     options->bloom_complexity = 2;
 
     /* parse comamndline options */
-    while ((opt = getopt(argc, argv, "vf:w:d:h:m:l:q:t:O:b:")) != -1) {
+    while ((opt = getopt(argc, argv, "Vvf:w:d:h:m:l:q:t:O:b:")) != -1) {
         switch (opt) {
 
         case 'f': /* output finish */
@@ -116,10 +123,13 @@ set_options(int argc, char **argv)
             }
             break;
 
-        case 'v':
+        case 'V':
                 fprintf(stderr, "Version 1.0\n");
                 exit(EXIT_SUCCESS);
 
+        case 'v':
+            options->verbose = true;
+            break;
 
         case 'b': /* bloom filter complexity */
             options->bloom_complexity = strtoul(optarg, NULL, 0);
@@ -156,11 +166,15 @@ int main(int argc, char **argv)
     bool ret;
     bitmap *bm;
     options *options;
-    int fd;
+    int fd = STDOUT_FILENO;
 
     options = set_options(argc, argv);
+    if (options == NULL) {
+        return EXIT_FAILURE;        
+    }
 
     /* read input */
+    INFO("Reading from png file \"%s\"\n", options->infile);
     bm = create_bitmap(options->infile);
     if (bm == NULL) {
         fprintf(stderr, "Error creating bitmap\n");
@@ -168,9 +182,8 @@ int main(int argc, char **argv)
     }
 
     /* open output */
-    if (strcmp(options->outfile, "-") == 0) {
-        fd = STDOUT_FILENO;
-    } else {
+    INFO("Writing output to \"%s\"\n", options->outfile);
+    if (strcmp(options->outfile, "-") != 0) {
         fd = open(options->outfile, 
                   O_WRONLY | O_CREAT | O_TRUNC, 
                   S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
@@ -181,7 +194,6 @@ int main(int argc, char **argv)
         free_bitmap(bm);
         return EXIT_FAILURE;
     }
-
 
     /* if user did not specify output dimensions assume those from the bitmap */
     if (options->width == 0) {
@@ -228,6 +240,8 @@ int main(int argc, char **argv)
         fprintf(stderr, "Error generating output\n");
         return EXIT_FAILURE;
     }
+
+    INFO("Completed in %ds\n", time(NULL) - options->start_time);
 
     return 0;
 }

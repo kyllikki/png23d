@@ -4,8 +4,8 @@
  * Licenced under the MIT License,
  *                http://www.opensource.org/licenses/mit-license.php
  *
- * This file is part of png23d. 
- * 
+ * This file is part of png23d.
+ *
  * mesh routines header.
  */
 
@@ -27,7 +27,7 @@ typedef uint32_t idxpnt;
 
 /** facet
  *
- * A facet is a triangle with its normal 
+ * A facet is a triangle with its normal
  */
 struct facet {
     pnt n; /**< surface normal */
@@ -43,7 +43,7 @@ struct vertex {
     struct facet *facets[FACETPNT_CNT]; /**< facets that use this vertex */
 };
 
-/** A 3d triangle mesh 
+/** A 3d triangle mesh
  */
 struct mesh {
     /* facets */
@@ -55,24 +55,23 @@ struct mesh {
     struct vertex *p; /**< array of vertices */
     uint32_t pcount; /**< number of valid vertices in the array */
     uint32_t palloc; /**< numer of vertices currently allocated */
-    
-    /* meta info */
+
+    /* stats and meta info */
     uint32_t width; /* conversion source width */
     uint32_t height; /* conversion source height */
     uint32_t cubes; /**< number of cubes with at least one face */
+    unsigned int bloom_miss;
+    unsigned int find_count; /* number of linear lookups */
+    int64_t find_cost;
 
     /* bloom filter */
     uint8_t *bloom_table; /* table for bloom filter */
     unsigned int bloom_table_entries; /* Number of entries (bits) it bloom */
     unsigned int bloom_iterations; /* number of times the hash is applied with
                                     * a differnt salt value (sometimes referred
-                                    * to as the number of functions?) 
+                                    * to as the number of functions?)
                                     */
 
-    unsigned int bloom_miss;
-
-    unsigned int find_count; /* number of linear lookups */
-    int64_t find_cost;
 
 
     /* debug */

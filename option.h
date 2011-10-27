@@ -12,6 +12,13 @@
 #ifndef PNG23D_OPTIONS_H
 #define PNG23D_OPTIONS_H 1
 
+#include <time.h>
+
+/* Using PRId64 yeilds a compile error if used in string concatination */
+#define D64F "%zd"
+
+#define INFO(fmt, ...) if (options->verbose) printf(fmt, __VA_ARGS__) 
+
 enum output_type {
     OUTPUT_PGM,
     OUTPUT_SCAD,
@@ -26,6 +33,8 @@ enum output_finish {
 };
 
 typedef struct options {
+    time_t start_time;
+
     enum output_type type; /* the type of output to produce */
 
     enum output_finish finish;
@@ -38,6 +47,8 @@ typedef struct options {
     unsigned int bloom_complexity; /* The size and number of iterations used
                                     * for the bloom filter
                                     */
+
+    bool verbose; /* make tool verbose about operations */
 
     char *infile; /* input filename */
     char *outfile; /* output filename */
