@@ -14,6 +14,8 @@
 
 #define FACETPNT_CNT 32
 
+/** calculate which faces of a cube are adjacent solid cubes
+ */
 uint32_t
 mesh_gen_get_face(bitmap *bm, 
                   unsigned int x, 

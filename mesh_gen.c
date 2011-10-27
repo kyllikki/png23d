@@ -33,71 +33,86 @@ enum faces {
 };
 
 uint32_t
-mesh_gen_get_face(bitmap *bm, 
-                  unsigned int x, 
-                  unsigned int y, 
-                  unsigned int z, 
+mesh_gen_get_face(bitmap *bm,
+                  unsigned int x,
+                  unsigned int y,
+                  unsigned int z,
                   struct options *options)
 {
     uint32_t faces = 0;
-    uint8_t transparent = options->transparent;
-    uint8_t pxl_val; 
-    uint8_t pxl_lvl = (z * (options->transparent / options->levels)); /* value at which pixel is transparent */
+    unsigned int transparent = options->transparent;
+    unsigned int pxl_lvl;
+    uint8_t pxl_val;
 
+#define Z_LVL_VAL(val) ((val) * (256 / options->levels))
 
-    pxl_val = bm->data[(y * bm->width) + x]; /* pixel value at sample point */
-    /* only opaque squares have faces */
-    if ((pxl_val >= transparent) || (pxl_val < pxl_lvl))
-        return 0;
-    
+    /* value at which pixel is transparent */
+    pxl_lvl = Z_LVL_VAL(z);
+
+    /* pixel value at sample point */
+    pxl_val = bm->data[(y * bm->width) + x];
+
+    if ((pxl_val == transparent) ||
+        (pxl_val < pxl_lvl)) {
+        /* only opaque squares can have faces */
+        return faces;
+    }
+
+    /* start with all faces set */
     faces = FACE_TOP | FACE_BOT |
-            FACE_FRONT | FACE_BACK |
+            FACE_BACK | FACE_FRONT |
             FACE_LEFT | FACE_RIGHT;
 
     /* z axis faces */
+
+    /* only the bottom layer has a front face */
     if (z > 0) {
         faces = faces & ~FACE_FRONT;
     }
 
     if ((z < (options->levels - 1)) &&
-        (pxl_val >= ((z + 1)*(options->transparent / options->levels)))) {
+        (pxl_val >= Z_LVL_VAL(z + 1))) {
         faces = faces & ~FACE_BACK;
     }
 
     /* x axis faces */
     if (x > 0) {
         /* pixel value left of sample point */
-        pxl_val = bm->data[(y * bm->width) + (x - 1)]; 
-        if ((pxl_val < transparent) && (pxl_val >= pxl_lvl)) {
+        pxl_val = bm->data[(y * bm->width) + (x - 1)];
+        if ((pxl_val != transparent) &&
+            (pxl_val >= pxl_lvl)) {
             faces = faces & ~FACE_LEFT;
         }
     }
 
     if (x < (bm->width - 1)) {
         /* pixel value right of sample point */
-        pxl_val = bm->data[(y * bm->width) + (x + 1)]; 
-        if ((pxl_val < transparent) && (pxl_val >= pxl_lvl)) {
+        pxl_val = bm->data[(y * bm->width) + (x + 1)];
+        if ((pxl_val != transparent) &&
+            (pxl_val >= pxl_lvl)) {
             faces = faces & ~FACE_RIGHT;
         }
     }
 
     if (y > 0) {
         pxl_val = bm->data[((y - 1) * bm->width) + x ];
-        if ((pxl_val < transparent) && (pxl_val >= pxl_lvl)) {
+        if ((pxl_val != transparent) &&
+            (pxl_val >= pxl_lvl)) {
             faces = faces & ~FACE_TOP;
         }
     }
 
     if (y < (bm->height - 1)) {
         pxl_val = bm->data[((y + 1) * bm->width) + x ];
-        if ((pxl_val < transparent) && (pxl_val >= pxl_lvl)) {
+        if ((pxl_val != transparent) &&
+            (pxl_val >= pxl_lvl)) {
             faces = faces & ~FACE_BOT;
         }
     }
 
 
 
-    
+
     return faces;
 }
 

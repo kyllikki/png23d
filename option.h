@@ -17,7 +17,7 @@
 /* Using PRId64 yeilds a compile error if used in string concatination */
 #define D64F "%zd"
 
-#define INFO(fmt, ...) if (options->verbose) printf(fmt, __VA_ARGS__) 
+#define INFO(...) if (options->verbose) printf(__VA_ARGS__) 
 
 enum output_type {
     OUTPUT_PGM,
@@ -60,5 +60,9 @@ typedef struct options {
     char *meshdebug; /* filename for mesh debug output */
 
 } options;
+
+
+options *read_options(int argc, char **argv);
+
 
 #endif

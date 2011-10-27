@@ -1,4 +1,13 @@
 #!/usr/bin/make
+#
+# png23d is a program to convert png images into 3d files
+#
+# Copyright 2011 Vincent Sanders <vince@kyllikki.org>
+#
+# Released under the MIT License, 
+#   http://www.opensource.org/licenses/mit-license.php
+
+VERSION=100
 
 WARNFLAGS = -W -Wall -Wundef -Wpointer-arith \
         -Wcast-align -Wwrite-strings -Wstrict-prototypes \
@@ -8,12 +17,14 @@ ifneq ($(GCCVER),2)
   WARNFLAGS += -Wno-unused-parameter 
 endif
 
-CFLAGS+=$(WARNFLAGS) -O2 -g
-#CFLAGS+=$(WARNFLAGS) -O0 -g
+OPTFLAGS=-O2
+#OPTFLAGS=-O0
+
+CFLAGS+=$(WARNFLAGS) -MMD -DVERSION=$(VERSION) $(OPTFLAGS) -g
 
 LDFLAGS+=-lpng
 
-PNG23D_OBJ=png23d.o bitmap.o mesh.o mesh_gen.o mesh_bloom.o out_pgm.o out_scad.o out_pscad.o out_stl.o
+PNG23D_OBJ=png23d.o option.o bitmap.o mesh.o mesh_gen.o mesh_bloom.o out_pgm.o out_scad.o out_pscad.o out_stl.o
 
 .PHONY : all clean
 
@@ -23,11 +34,7 @@ png23d:$(PNG23D_OBJ)
 
 -include $(PNG23D_OBJ:.o=.d)
 
-# compile and generate dependency info
-%.o: %.c
-	$(CC) -c $(CFLAGS) $*.c -o $*.o
-	$(CC) -MM $(CFLAGS) $*.c > $*.d
-
+-include test/Makefile.sub
 
 clean:
 	${RM} png23d $(PNG23D_OBJ) *.d *~ 

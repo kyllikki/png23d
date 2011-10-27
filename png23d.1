@@ -3,14 +3,15 @@
 png23d - PNG to 3D file conversion
 .SH SYNOPSIS
 .B png23d
+.RB [ \-V ]
 .RB [ \-v ]
 .RB [ \-f
 .IR finish ]
-.RB [ \-t
+.RB [ \-o
 .IR type ]
+.RB [ \-t
+.IR transparancy ]
 .RB [ \-l
-.IR level ]
-.RB [ \-q
 .IR quantisation ]
 .RB [ \-w
 .IR width ]
@@ -18,6 +19,12 @@ png23d - PNG to 3D file conversion
 .IR height ]
 .RB [ \-d
 .IR depth ]
+.RB [ \-O
+.IR optimisation ]
+.RB [ \-b
+.IR complexity ]
+.RB [ \-m
+.IR filename ]
 input output
 .SH DESCRIPTION
 .PP
@@ -25,28 +32,28 @@ input output
 is a tool which converts a PNG image into a three dimensional file suitable for modelling applications especially for 3D printers.
 .SH "OPTIONS"
 .TP
-.B \-v
+.B \-V
 Display the program version and exit.
 .TP
-.B \-l
-The grey level (1 - 255) at which the output is considered transparent (default is 255).
+.B \-v
+Make the program produce verbose output.
 .TP
-.B \-q
-The number of levels the range below the transparency level is divided (1 - level) (default is 1). Note that as of version 1.0 only the pgm output type obeys this, all other outputs assume 1.
+.B \-t
+The colour which is used for transparent output. Valid range is 0 to 255(default) or 'x' to disable.
+.TP
+.B \-l
+The number of levels into which the colourspace is divided. Valid range is 1(default) to 256. Note that as of version 1.0 not all output geenrators obey this parameter or may use a different finish type to that specified if the parameter is not 1.
 .TP
 .B \-w
-The output target width (x dimension)
+The output target width (x dimension). The source PNG width is used by default.
 .TP
 .B \-h
 The output target height (y dimension). Note most outputs will simply ignore this parameter and retain the original image aspect ratio based on the width parameter.
 .TP
 .B \-d
-The output target depth (z dimension) Effectively the depth of the resulting extrusion.
+The output target depth (z dimension) The number of levels specified is used as the default.
 .TP
-.B \-f
-Specifies the finish out the output 3D mesh the default is \fBraw\fR which keeps all the square edges. The \fBsmooth\fR option gives sloped edges and reduces jaggies on output types that support it.
-.TP
-.B \-t
+.B \-o
 Specifies the output type
 .TS
 tab (@);
@@ -55,7 +62,7 @@ pgm@T{
 Output a PGM format bitmap. This can be used to verify 
 the level and quantisation parameters are set correctly.
 T}
-scad@T{
+cscad@T{
 Output a scad format file for use with \fBopenscad\fR. 
 This file will be comprised of a union of cubes. The 
 finish cannot be controlled (it is raw blocks) and the 
@@ -81,6 +88,32 @@ T}
 .TE
 .PP
 .TP
+.B \-f
+Specifies the finish out the output 3D mesh the default is \fBraw\fR which keeps all the square edges. The \fBsmooth\fR option gives sloped edges and reduces jaggies on output types that support it.
+.TP
+.B \-O
+Specify the mesh optimisation level of 0, 1(the default) or 2. 
+.TS
+tab (@);
+l lx.
+0@T{
+No mesh optimisation will be performed. This will be fast to execute but the resulting mesh will be exceptionally complex and will almost certianly require additional processing in another tool such as meshlab.
+T}
+1@T{
+Mesh simplification using edge removal algorithm will be performed. This process is relatively fast and the result maintains the exact blocky geometry from the generation process. Typically this produces reasonable results for non complex extrusions.
+T}
+2@T{
+Mesh simplification using quadratic surface removal. This has not yet been implemented! Use a tool such as meshlab if you require this type of simplification.
+T}
+.TE
+.PP
+.TP
+.B \-b
+The bloom filter complexity which controls the size of the filter and number of iterations(functions) used by vertex indexing as part of the mesh simplification process. Valid range is 0 to 16 with a default of 2. Most users will never need to alter this parameter. It is useful only if they are experiencing a high filter miss rate on exceptionally large meshes with 10 million facets or more).
+.TP
+.B \-m
+The filename to save the mesh optimisation debug output to. This is a generated html file which graphically shows each stage of the mesh simplification. This is useful only for debugging purposes and for images above a few hundred facets the output can run to many hundreds of megabytes.
+.TP
 .B input
 Specifies the source PNG file to convert from.
 .TP
@@ -94,7 +127,7 @@ to
 .I foo.scad
 in scad polyhedron output format:
 .IP
-png23d -t pscad foo.png foo.scad
+png23d -o pscad foo.png foo.scad
 .PP
 To convert from 
 .I foo.png
@@ -102,7 +135,7 @@ to
 .I foo.stl
 in binary STL output format with smooth finish:
 .IP
-png23d -f smooth -t stl foo.png foo.scad
+png23d -f smooth -o stl foo.png foo.scad
 .PP
 To convert from 
 .I foo.png
@@ -110,7 +143,7 @@ to
 .I foo.stl
 in ascii STL output format with smooth finish and 50 unit output width:
 .IP
-png23d -f smooth -t astl -w 50 foo.png foo.scad
+png23d -f smooth -o astl -w 50 foo.png foo.scad
 .\".SH "SEE ALSO"
 .\"convert(1)
 .SH AUTHOR

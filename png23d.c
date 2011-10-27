@@ -13,13 +13,12 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <time.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "option.h"
 #include "bitmap.h"
@@ -28,138 +27,6 @@
 #include "out_pscad.h"
 #include "out_stl.h"
 
-static options *
-set_options(int argc, char **argv)
-{
-    int opt;
-    options *options;
-
-    options = calloc(1, sizeof(struct options));
-    if (options == NULL) {
-        return NULL;
-    }
-
-    /* keep record of start time */
-    options->start_time = time(NULL);
-
-    /* default values */
-    options->type = OUTPUT_ASTL;
-    options->finish = FINISH_SMOOTH;
-    options->optimise = 1;
-    options->transparent = 255;
-    options->levels = 1;
-    options->width = 0.0;
-    options->height = 0.0;
-    options->depth = 1.0;
-    options->bloom_complexity = 2;
-
-    /* parse comamndline options */
-    while ((opt = getopt(argc, argv, "Vvf:w:d:h:m:l:q:t:O:b:")) != -1) {
-        switch (opt) {
-
-        case 'f': /* output finish */
-            if (strcmp(optarg, "raw") == 0) {
-                options->finish = FINISH_RAW;
-            } else if (strcmp(optarg, "smooth") == 0) {
-                options->finish = FINISH_SMOOTH;
-            } else {
-                fprintf(stderr, "Unknown output finish %s\n", optarg);
-                exit(EXIT_FAILURE);
-            }
-            break;
-
-        case 'w': /* output width */
-            options->width = strtof(optarg, NULL);
-            break;
-
-        case 'h': /* output height */
-            options->height = strtof(optarg, NULL);
-            break;
-
-        case 'd': /* output depth */
-            options->depth = strtof(optarg, NULL);
-            break;
-
-        case 'O': /* optimisation level */
-            options->optimise = strtoul(optarg, NULL,0);
-            break;
-
-        case 'm': /* mesh debug output filename */
-            options->meshdebug = strdup(optarg);
-            break;
-
-        case 'l': /* transparent level */
-            options->transparent = strtoul(optarg, NULL, 0);
-            if (options->transparent > 255) {
-                fprintf(stderr, "transparent level must be between 0 and 255\n");
-                exit(EXIT_FAILURE);
-
-            }
-            break;
-
-        case 'q': /* quantisation levels */
-            options->levels = strtoul(optarg, NULL, 0);
-            if (options->levels > options->transparent) {
-                fprintf(stderr, "quantisation levels cannot exceed transparent level\n");
-                exit(EXIT_FAILURE);
-
-            }
-            break;
-
-        case 't': /* output type */
-            if (strcmp(optarg, "pgm") == 0) {
-                options->type = OUTPUT_PGM;
-            } else if (strcmp(optarg, "scad") == 0) {
-                options->type = OUTPUT_SCAD;
-            } else if (strcmp(optarg, "pscad") == 0) {
-                options->type = OUTPUT_PSCAD;
-            } else if (strcmp(optarg, "stl") == 0) {
-                options->type = OUTPUT_STL;
-            } else if (strcmp(optarg, "astl") == 0) {
-                options->type = OUTPUT_ASTL;
-            } else {
-                fprintf(stderr, "Unknown output type %s\n", optarg);
-                exit(EXIT_FAILURE);
-            }
-            break;
-
-        case 'V':
-                fprintf(stderr, "Version 1.0\n");
-                exit(EXIT_SUCCESS);
-
-        case 'v':
-            options->verbose = true;
-            break;
-
-        case 'b': /* bloom filter complexity */
-            options->bloom_complexity = strtoul(optarg, NULL, 0);
-            if (options->bloom_complexity > 16) {
-                fprintf(stderr, "bloom complexity must be between 0 and 16\n");
-                exit(EXIT_FAILURE);
-            }
-            break;
-
-        default: /* '?' */
-            fprintf(stderr,
-                    "Usage: %s [-l transparent] [-q levels] [-t output type] infile outfile\n"
-                    "          infile The input file\n"
-                    "          outfile The output file or - for stdout\n"
-                    "          -t     output type. One of pgm, scad, stl, astl\n",
-                    argv[0]);
-            exit(EXIT_FAILURE);
-        }
-    }
-
-    /* files */
-    if ((optind +1) >= argc) {
-        fprintf(stderr, "input and output files must be specified\n");
-            exit(EXIT_FAILURE);
-    }
-    options->infile = strdup(argv[optind]);
-    options->outfile = strdup(argv[optind + 1]);
-
-    return options;
-}
 
 int main(int argc, char **argv)
 {
@@ -168,7 +35,7 @@ int main(int argc, char **argv)
     options *options;
     int fd = STDOUT_FILENO;
 
-    options = set_options(argc, argv);
+    options = read_options(argc, argv);
     if (options == NULL) {
         return EXIT_FAILURE;        
     }
@@ -207,22 +74,27 @@ int main(int argc, char **argv)
     /* generate output */
     switch (options->type) {
     case OUTPUT_PGM:
+        INFO("Generating PGM\n");
         ret = output_pgm(bm, fd, options);
         break;
 
     case OUTPUT_SCAD:
+        INFO("Generating scad cubes\n");
         ret = output_flat_scad_cubes(bm, fd, options);
         break;
 
     case OUTPUT_PSCAD:
+        INFO("Generating scad ploygon\n");
         ret = output_flat_scad_polyhedron(bm, fd, options);
         break;
 
     case OUTPUT_STL:
+        INFO("Generating binary STL\n");
         ret = output_flat_stl(bm, fd, options);
         break;
 
     case OUTPUT_ASTL:
+        INFO("Generating ASCII STL\n");
         ret = output_flat_astl(bm, fd, options);
         break;
 
@@ -241,7 +113,8 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
     }
 
-    INFO("Completed in %ds\n", time(NULL) - options->start_time);
+    INFO("Completed in %llds\n", 
+         (long long)(time(NULL) - options->start_time));
 
     return 0;
 }

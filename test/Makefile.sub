@@ -1,0 +1,22 @@
+#!/usr/bin/make
+#
+# make fragment for png23d tests
+
+TESTS=square.stl c.stl o.stl s.stl spiral.stl cube.astl steps.astl debian-logo.scad
+
+TESTF=$(addprefix test/, $(TESTS))
+
+
+test:$(TESTF)
+
+# convert to binary stl
+test/%.stl:test/%.png
+	./png23d -o stl -w 20 -d 10 $< $@
+
+#convert to ascii stl (cheats by also having 10 levels for these tests)
+test/%.astl:test/%.png
+	./png23d -l 10 -o astl -w 20 -d 10 $< $@
+
+#convert to smoothed single layer polyhedron scad output
+test/%.scad:test/%.png
+	./png23d -l 1 -f smooth -o pscad -w 20 -d 10 $< $@
