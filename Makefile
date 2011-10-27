@@ -36,5 +36,5 @@ png23d:$(PNG23D_OBJ)
 
 -include test/Makefile.sub
 
-clean:
+clean: testclean
 	${RM} png23d $(PNG23D_OBJ) *.d *~ 

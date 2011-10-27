@@ -2,12 +2,12 @@
 #
 # make fragment for png23d tests
 
-TESTS=square.stl c.stl o.stl s.stl spiral.stl cube.astl steps.astl debian-logo.scad
+TESTS=square.stl c.stl o.stl s.stl spiral.stl calcube.stl cube.astl steps.astl debian-logo.scad
 
 TESTF=$(addprefix test/, $(TESTS))
 
 
-test:$(TESTF)
+test:png23d $(TESTF)
 
 # convert to binary stl
 test/%.stl:test/%.png
@@ -19,4 +19,9 @@ test/%.astl:test/%.png
 
 #convert to smoothed single layer polyhedron scad output
 test/%.scad:test/%.png
-	./png23d -l 1 -f smooth -o pscad -w 20 -d 10 $< $@
+	./png23d -l 1 -f smooth -o pscad -w 50 -d 4 $< $@
+
+.PHONY: testclean
+
+testclean:
+	${RM} $(TESTF)
