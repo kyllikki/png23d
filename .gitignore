@@ -4,6 +4,7 @@ png23d
 *.pgm
 *.png
 *.stl
+*.astl
 *.gcode
 *.scad
 *~

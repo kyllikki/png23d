@@ -14,7 +14,7 @@
 
 #define FACETPNT_CNT 32
 
-/* 3d point */
+/** A 3d point */
 typedef struct pnt {
     float x;
     float y;
@@ -22,7 +22,7 @@ typedef struct pnt {
 } pnt;
 
 
-/* an indexed point */
+/** an indexed point */
 typedef uint32_t idxpnt;
 
 /** facet
@@ -35,16 +35,14 @@ struct facet {
     idxpnt i[3]; /** triangle indexed vertices */
 };
 
-/** An indexed vertex within the mesh.
- */
+/** An indexed vertex within the mesh. */
 struct vertex {
     struct pnt pnt; /**< the location of this vertex */
     unsigned int fcount; /**< the number of facets that use this vertex */
     struct facet *facets[FACETPNT_CNT]; /**< facets that use this vertex */
 };
 
-/** A 3d triangle mesh
- */
+/** A 3d triangle mesh. */
 struct mesh {
     /* facets */
     struct facet *f; /**< array of facets */
@@ -57,22 +55,21 @@ struct mesh {
     uint32_t palloc; /**< numer of vertices currently allocated */
 
     /* stats and meta info */
-    uint32_t width; /* conversion source width */
-    uint32_t height; /* conversion source height */
+    uint32_t width; /**< conversion source width */
+    uint32_t height; /**< conversion source height */
     uint32_t cubes; /**< number of cubes with at least one face */
-    unsigned int bloom_miss;
-    unsigned int find_count; /* number of linear lookups */
-    int64_t find_cost;
+    unsigned int bloom_miss; /**< number of times the bloom filter missed */
+    unsigned int find_count; /**< number of vertex lookups */
+    int64_t find_cost; /**< number of comparisons in vertex lookups */
 
     /* bloom filter */
-    uint8_t *bloom_table; /* table for bloom filter */
-    unsigned int bloom_table_entries; /* Number of entries (bits) it bloom */
-    unsigned int bloom_iterations; /* number of times the hash is applied with
-                                    * a differnt salt value (sometimes referred
-                                    * to as the number of functions?)
-                                    */
+    uint8_t *bloom_table; /**< table for bloom filter */
+    unsigned int bloom_table_entries; /**< Number of entries (bits) it bloom */
 
-
+    /** number of times the hash is applied with a differnt salt value
+     * (sometimes referred to as the number of functions)
+     */
+    unsigned int bloom_iterations; 
 
     /* debug */
     int dumpno;

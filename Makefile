@@ -9,6 +9,8 @@
 
 VERSION=100
 
+PREFIX?=/usr/local
+
 WARNFLAGS = -W -Wall -Wundef -Wpointer-arith \
         -Wcast-align -Wwrite-strings -Wstrict-prototypes \
         -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls \
@@ -38,3 +40,9 @@ png23d:$(PNG23D_OBJ)
 
 clean: testclean
 	${RM} png23d $(PNG23D_OBJ) *.d *~ 
+
+install:png23d
+	install -D png23d $(DESTDIR)$(PREFIX)/bin
+
+install-man:png23d.1
+	install -D png23d.1 $(DESTDIR)$(PREFIX)/share/man/man1

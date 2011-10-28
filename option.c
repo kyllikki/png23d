@@ -94,7 +94,7 @@ read_options(int argc, char **argv)
                 options->type = OUTPUT_ASTL;
             } else {
                 fprintf(stderr, "Unknown output type %s\n", optarg);
-                exit(EXIT_FAILURE);
+                goto read_options_error;
             }
             break;
 
@@ -105,7 +105,7 @@ read_options(int argc, char **argv)
                 options->finish = FINISH_SMOOTH;
             } else {
                 fprintf(stderr, "Unknown output finish %s\n", optarg);
-                exit(EXIT_FAILURE);
+                goto read_options_error;
             }
             break;
 
@@ -117,7 +117,7 @@ read_options(int argc, char **argv)
             options->bloom_complexity = strtoul(optarg, NULL, 0);
             if (options->bloom_complexity > 16) {
                 fprintf(stderr, "bloom complexity must be between 0 and 16\n");
-                exit(EXIT_FAILURE);
+                goto read_options_error;
             }
             break;
 
@@ -136,20 +136,14 @@ read_options(int argc, char **argv)
 
 
         default: /* '?' */
-            fprintf(stderr,
-                    "Usage: %s [-t transparent] [-qllevels] [-o output type] infile outfile\n"
-                    "          infile The input file\n"
-                    "          outfile The output file or - for stdout\n"
-                    "          -o     output type. One of pgm, bscad, stl, astl\n",
-                    argv[0]);
-            exit(EXIT_FAILURE);
+            goto read_options_error;
         }
     }
 
     /* files */
     if ((optind +1) >= argc) {
         fprintf(stderr, "input and output files must be specified\n");
-            exit(EXIT_FAILURE);
+        goto read_options_error;
     }
     options->infile = strdup(argv[optind]);
     options->outfile = strdup(argv[optind + 1]);
@@ -157,6 +151,15 @@ read_options(int argc, char **argv)
     return options;
 
 read_options_error:
+    fprintf(stderr,
+            "Usage: png23d [-t transparent] [-V] [-v] [-f finish] [-O optimisation]\n"
+            "              [-w width] [-h height] [-d depth] [-l levels] [-o outtype]\n"
+            "              [-b complexity] [-m filename] infile outfile\n\n"
+            "\tinfile\tThe input file\n"
+            "\toutfile\tThe output file or - for stdout\n"
+            "\t-l\tNumber of levels to quantise the heightmap into.\n"
+            "\t-o\tThe output file type. One of pgm, bscad, pscad, stl, astl\n");
+
     free(options);
     return NULL;
 }
