@@ -46,3 +46,9 @@ install:png23d
 
 install-man:png23d.1
 	install -D png23d.1 $(DESTDIR)$(PREFIX)/share/man/man1
+
+png23d.tga:png23d.pov
+	povray +O$@ +UV +UL +A0.2 +FT32 +W1024 +H768 $<
+
+png23d.png:png23d.tga
+	convert $< $@
