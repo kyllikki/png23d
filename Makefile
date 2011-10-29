@@ -39,7 +39,7 @@ png23d:$(PNG23D_OBJ)
 -include test/Makefile.sub
 
 clean: testclean
-	${RM} png23d $(PNG23D_OBJ) *.d *~ 
+	${RM} png23d $(PNG23D_OBJ) *.d *~ png23d.png
 
 install:png23d
 	install -D png23d $(DESTDIR)$(PREFIX)/bin
@@ -47,8 +47,7 @@ install:png23d
 install-man:png23d.1
 	install -D png23d.1 $(DESTDIR)$(PREFIX)/share/man/man1
 
-png23d.tga:png23d.pov
-	povray +L/usr/share/povray/include/ +O$@ +UV +UL +A0.2 +FT32 +W1024 +H768 $<
+# logo creation
+png23d.png:png23d.pov
+	povray +L/usr/share/povray/include/ -D +Q11 +O$@ +UV +UL +A0.2 +FP8 +W400 +H300 $<
 
-png23d.png:png23d.tga
-	convert $< $@
