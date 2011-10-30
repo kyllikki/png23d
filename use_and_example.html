@@ -45,8 +45,10 @@
 
     <h2>Usage</h2>
 
+    <h3>Overview</h3>
+
     <p>Although the tool was primarily developed for 3D printing
-    applications the STL output is two maifold and most CAD
+    applications, the STL output is two maifold and most CAD
     applications will import the output correctly.</p>
 
     <p>Usage is based around the commandline in a similar manner to
@@ -58,12 +60,39 @@
     available command line switches may be found in the man page
     provided.</p>
 
+    <h3>3D printing</h3>
+
+    <p>If you are using the output from this tool for 3D printing some
+    specific properties have been discovered (from
+    printing <em>lots</em> of faliures!)
+
+      <ul>
+	<li>The output model should have an x/y approximate spatial
+	  resolution of 0.5mm per pixel. i.e. if the output is to be
+	  printed at 100mm across the input image should be 200 pixels
+	  across.</li>
+
+	<li>A spacial resolution of more than 0.3mm is pointless and
+	simply results in huge output files which cannot be rendered
+	or printed.</li>
+
+	<li>Calculating how many layers (z resolution) at generation
+	time avoids excessive model complexity and wasted render time
+	later. i.e. if your slicing program is set for 0.4mm layers
+	and the output model is 10mm high, more than 25 layers in the
+	generated output is poinless and will introduce aliasing
+	problems.</li>
+
+      </ul>    
+    </p>
+
     <h2>Examples</h2>
 
     <p>Here are some examples of using the tool
       <ul>
 	<li><a href="examples/debian-logo-scad.html"><img width="160" src="examples/printed-debian-logo-pscad-s.jpg"/>Debian open logo and scad output</a></li>
 	<li><a href="examples/debian-logo-stl.html"><img width="160" src="examples/printed-debian-logo-stl-s.jpg"/>Debian open logo and STL output</a></li>
+	<li><a href="examples/turing-lithophane.html"><img width="160" src="examples/printed-Turing-lithophane-s.jpg"/>Lithophane of Alan Turing</a></li>
       </ul>
     </p>
 

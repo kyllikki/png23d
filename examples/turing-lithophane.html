@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset='utf-8'>
+
+  <title>Lithophane of Alan Turing</title>
+
+  <style type="text/css">
+    body {
+      margin-top: 1.0em;
+      background-color: #000000;
+      font-family: Helvetica, Arial, FreeSans, san-serif;
+      color: #ffffff;
+    }
+    #container {
+      margin: 0 auto;
+      width: 700px;
+    }
+    h1 { font-size: 3.8em; color: #ffffff; margin-bottom: 3px; }
+    h1 .small { font-size: 0.4em; }
+    h1 a { text-decoration: none }
+    h2 { font-size: 1.5em; color: #ffffff; clear: both; }
+    h3 { color: #ffffff; }
+    img { float: left; }
+    p { clear: both; }
+    a { color: #0000ff; }
+    .description { font-size: 1.2em; margin-bottom: 30px; margin-top: 30px; font-style: italic;}
+    .download { float: right; }
+    pre { background: #000; color: #fff; padding: 15px;}
+    hr { border: 0; width: 80%; border-bottom: 1px solid #aaa}
+    .footer { text-align:center; padding-top:30px; font-style: italic; }
+  </style>
+</head>
+
+<body>
+  <div id="container">
+
+
+    <div>
+    <a href="http://github.com/kyllikki/png23d"><img alt="PNG23D logo" title="PNG23D" src="../png23d.png"/></a>
+      <span class="small">by <a href="http://github.com/kyllikki">kyllikki</a></span>
+    </div>
+
+    <h2>Lithophane of Alan Turing</h2>
+
+    <p>This example shows how to produce a 
+      <a href="http://en.wikipedia.org/wiki/Lithophane">Lithophane</a>
+      of Alan Turing and shows a physical print of the result.</p>
+
+    <p>This example was inspired by <a href="http://www.thingiverse.com/thing:12801">Rupert Rawnsley Alan Turing Lithophane</a>.</p>
+
+    <p>I decided the output would be 100mm wide and 32 layers deep (12.8mm with 0.4mm layers) as that seemed to keep the mesh complexity to reasonable values. I therefore needed an image approximately 200-300pixels wide and of suitable contrast</p>
+
+    <p>An image of Turing was obtained from the <a href="http://www.npg.org.uk/collections/search/portraitLarge/mw63680/Alan-Mathison-Turing?LinkID=mp18700&role=sit&rNo=2">National Portrait Gallery</a>. The 370x500 pixel sample image was cropped and scaled to a 280x380 head shot.<p> 
+
+    <p>The image colours were then altered using the Gimp. The image was changed to grayscale then level tool to increase the contrast and use the whole available colour range. Then the image was converted to a 32 entry linear indexed palette with no dithering and back to a greyscale image. Finally the image was inverted, this is necessary because in a lithophane the lightest areas require the thinnest material.</p>
+
+    <img width="280" src="alan_turing-inv.png"/>
+
+    <p>The tool was run on this image with the settings for 32 levels,
+    width of 100 and depth of 12.8 as already determined
+<pre>$ png23d -v -t x -l 32 -w 100 -d 12.8 -o stl alan_turing-inv.png alan_turing.stl
+Reading from png file "alan_turing-inv.png"
+Writing output to "alan_turing.stl"
+Generating binary STL
+Generating mesh from bitmap of size 280x380 with 32 levels
+Commencing mesh simplification on 788684 facets
+Indexing 2366052 verticies
+Bloom filter prevented 390333 (16%) lookups
+Bloom filter had 573 (0%) false positives
+Indexing required 1975719 lookups with mean search cost 2917 comparisons
+Number of unique verticies in result index 390906
+Number of facets in result 443148
+Writing Binary STL output
+Completed in 22s</pre>
+</p>
+
+    <p>The result was loaded into meshlab to inspect the <a href="alan_turing.stl">generated mesh</a>.</p>
+
+    <img width="492" src="meshlab-alan_turing-raw-stl.png"/>
+
+    <p>Although usable in this form the mesh still has over 400,000 faces and would take an excessive time to run through skeinforge (I terminated it after 2 hours waiting).</p>
+
+    <p>To reduce the complexity the meshlab quadratic decimation filter was applied to reduce the face count to 100,000.</p>
+
+    <img width="354" src="meshlab-alan_turing-decimation-dialog.png"/>
+
+    <p>The <a href="alan_turing-simplified.stl">simplified mesh</a> was still acceptable quality.</p>
+
+    <img width="492" src="meshlab-alan_turing-simplified-stl.png"/>
+    
+    <p>The STL file was loaded into the Printrun project tool Pronterface which automatically ran skeinforge on the file to layer slice the input.</p>
+
+      <img width="640" src="pronterface-alan_turing-simplified-stl.png"/>
+
+    <p>My printer settings have a 0.4mm layer height which produced
+    should have generated 32 layers for the 12.8mm of output, in fact
+    36 layers were generated. The slicing procedure took 38minutes
+    46seconds to complete.</p>
+
+    <p>The print itself took a few hours to complete, using around 10m
+    of 3mm filament, resulting in a reasonable lithophane.</p>
+
+      <a href="printing-alan_turing.jpg"><img width="320" src="printing-alan_turing-s.jpg"/></a>
+
+
+    <p>I did not have any white filament, nor enough
+    of a single colour so the result is in green and yellow.</p>
+
+      <a href="printed-alan_turing.jpg"><img width="320" src="printed-alan_turing-s.jpg"/></a>
+
+    <p>I discovered that the best viewing results for this type of
+    design are to be found by back-lighting from the printed side. The
+    flat bottom layer provides an excellent viewing surface.</p>
+
+      <a href="backlit-alan_turing-lithophane.jpg"><img title="Backlit lithophane of Alan Turing" width="320" src="backlit-alan_turing-lithophane-s.jpg"/></a>
+
+
+    <p>In conclusion the png23d tool worked as required and generated
+    a usable result. If I were to repeat the print I would observe
+    that more than 10mm of depth is not useful with coloured PLA
+    material so 25 layers (at 0.4mm) would suffice. Additionally
+    knowing that the result is best viewed from the flat side of the
+    print I would flip the image in the horizontal direction to
+    maintain the original image composition.</p>
+
+  </div>
+
+  
+</body>
+</html>
