@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset='utf-8'>
+
+  <title>Debian open logo and scad output</title>
+
+  <style type="text/css">
+    body {
+      margin-top: 1.0em;
+      background-color: #000000;
+      font-family: Helvetica, Arial, FreeSans, san-serif;
+      color: #ffffff;
+    }
+    #container {
+      margin: 0 auto;
+      width: 700px;
+    }
+    h1 { font-size: 3.8em; color: #ffffff; margin-bottom: 3px; }
+    h1 .small { font-size: 0.4em; }
+    h1 a { text-decoration: none }
+    h2 { font-size: 1.5em; color: #ffffff; clear: both; }
+    h3 { color: #ffffff; }
+    img { float: left; }
+    p { clear: both; }
+    a { color: #0000ff; }
+    .description { font-size: 1.2em; margin-bottom: 30px; margin-top: 30px; font-style: italic;}
+    .download { float: right; }
+    pre { background: #000; color: #fff; padding: 15px;}
+    hr { border: 0; width: 80%; border-bottom: 1px solid #aaa}
+    .footer { text-align:center; padding-top:30px; font-style: italic; }
+  </style>
+</head>
+
+<body>
+  <div id="container">
+
+
+    <div>
+    <a href="http://github.com/kyllikki/png23d"><img alt="PNG23D logo" title="PNG23D" src="../png23d.png"/></a>
+      <span class="small">by <a href="http://github.com/kyllikki">kyllikki</a></span>
+    </div>
+
+    <h2>Debian open logo and scad output</h2>
+    
+    <p>First example is a simple extrusion of the Debian logo into a SCAD file.</p>
+
+    <p>The Debian open use logo in PNG format was downloaded from the <a href="http://www.debian.org/logos/">Debian logos page</a>. <img width="101" src="openlogo-nd-100.png"/></p>
+
+    <p>The image was run through gimp and neatened up into only
+    thicker areas, scaled to 200pixels wide using the cubic method and
+    reduced to black and white. The colour reduction was not strictly
+    neccissary but made the intermediate image
+    clearer.</p><img width="200" src="debian-logo.png"/>
+
+    <p>The png23d program was run to generate a polyhedon scad output
+    file with a width of 100.
+
+      <pre>$ png23d -o pscad -w 100 -d 1 debian-logo.png debian-logo.scad</pre>
+      The default result in a smooth extrusion with a single level
+      (every pixel is opaque at this level) and white (colour 255)
+      used as transparent. The output width is 100 units and the depth
+      is set to 1.</p>
+
+    <p>The <a href="debian-logo.scad">resulting scad file</a> was then
+    loaded into openscad and compled/rendered.</p>
+
+      <img width="640" src="openscad-debian-logo.png"/>
+
+    <p>Obviously the image module can now be used in any scad design as
+      the user sees fit. The polyhedron can be scaled and mutated as
+      any other object in an openscad model.</p>
+
+    <p>The output width was changed to 75 and a compiled and exported
+    as STL and then printed. This was repeated at width 50. I did not
+    have any red filament so the results are in green but is shown
+    here next to a red vinyl sticker on the back of my
+    laptop.</p>
+
+      <a href="printed-debian-logo-pscad.jpg"><img width="640" src="printed-debian-logo-pscad-s.jpg"/></a>
+
+
+  </div>
+
+  
+</body>
+</html>

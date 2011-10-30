@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset='utf-8'>
+
+  <title>Usage and examples</title>
+
+  <style type="text/css">
+    body {
+      margin-top: 1.0em;
+      background-color: #000000;
+      font-family: Helvetica, Arial, FreeSans, san-serif;
+      color: #ffffff;
+    }
+    #container {
+      margin: 0 auto;
+      width: 700px;
+    }
+    h1 { font-size: 3.8em; color: #ffffff; margin-bottom: 3px; }
+    h1 .small { font-size: 0.4em; }
+    h1 a { text-decoration: none }
+    h2 { font-size: 1.5em; color: #ffffff; clear: both; }
+    h3 { color: #ffffff; }
+    img { float: left; }
+    p { clear: both; }
+    li { clear: both; }
+    a { color: #0000ff; }
+    .description { font-size: 1.2em; margin-bottom: 30px; margin-top: 30px; font-style: italic;}
+    .download { float: right; }
+    pre { background: #000; color: #fff; padding: 15px;}
+    hr { border: 0; width: 80%; border-bottom: 1px solid #aaa}
+    .footer { text-align:center; padding-top:30px; font-style: italic; }
+  </style>
+</head>
+
+<body>
+  <div id="container">
+
+
+    <div>
+    <a href="http://github.com/kyllikki/png23d"><img alt="PNG23D logo" title="PNG23D" src="png23d.png"/></a>
+      <span class="small">by <a href="http://github.com/kyllikki">kyllikki</a></span>
+    </div>
+
+
+    <h2>Usage</h2>
+
+    <p>Although the tool was primarily developed for 3D printing
+    applications the STL output is two maifold and most CAD
+    applications will import the output correctly.</p>
+
+    <p>Usage is based around the commandline in a similar manner to
+    the ImageMagick two dimensional image manipulation tool.</p>
+
+    <p>The input file must be a PNG image that the libpng library can
+    read and the output file may have any arbitrary filename. The
+    output type is controlled by the -o switch. The full set of
+    available command line switches may be found in the man page
+    provided.</p>
+
+    <h2>Examples</h2>
+
+    <p>Here are some examples of using the tool
+      <ul>
+	<li><a href="examples/debian-logo-scad.html"><img width="160" src="examples/printed-debian-logo-pscad-s.jpg"/>Debian open logo and scad output</a></li>
+	<li><a href="examples/debian-logo-stl.html"><img width="160" src="examples/printed-debian-logo-stl-s.jpg"/>Debian open logo and STL output</a></li>
+      </ul>
+    </p>
+
+
+
+  </div>
+
+  
+</body>
+</html>

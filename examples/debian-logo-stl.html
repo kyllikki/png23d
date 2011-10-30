@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset='utf-8'>
+
+  <title>Debian open logo and STL</title>
+
+  <style type="text/css">
+    body {
+      margin-top: 1.0em;
+      background-color: #000000;
+      font-family: Helvetica, Arial, FreeSans, san-serif;
+      color: #ffffff;
+    }
+    #container {
+      margin: 0 auto;
+      width: 700px;
+    }
+    h1 { font-size: 3.8em; color: #ffffff; margin-bottom: 3px; }
+    h1 .small { font-size: 0.4em; }
+    h1 a { text-decoration: none }
+    h2 { font-size: 1.5em; color: #ffffff; clear: both; }
+    h3 { color: #ffffff; }
+    img { float: left; }
+    p { clear: both; }
+    a { color: #0000ff; }
+    .description { font-size: 1.2em; margin-bottom: 30px; margin-top: 30px; font-style: italic;}
+    .download { float: right; }
+    pre { background: #000; color: #fff; padding: 15px;}
+    hr { border: 0; width: 80%; border-bottom: 1px solid #aaa}
+    .footer { text-align:center; padding-top:30px; font-style: italic; }
+  </style>
+</head>
+
+<body>
+  <div id="container">
+
+
+    <div>
+    <a href="http://github.com/kyllikki/png23d"><img alt="PNG23D logo" title="PNG23D" src="../png23d.png"/></a>
+      <span class="small">by <a href="http://github.com/kyllikki">kyllikki</a></span>
+    </div>
+
+    <h2>Debian open logo and STL output</h2>
+
+    <p>This example is a simple extrusion of the Debian logo into
+    an STL file and a physical print of the resulting file.</p>
+
+    <p>The modified debian logo png from the <a href="debian-logo-scad.html">Debian open logo and scad output example</a> was reused here.</p>
+
+    <p>The png23d program was run to generate a binary STL mesh file
+    with a width of 100 and a depth of 2 (The verbose switch is used just for
+    infomation here).
+
+      <pre>$ png23d -v -o stl -w 100 -d 2 debian-logo.png debian-logo.stl
+Reading from png file "debian-logo.png"
+Writing output to "debian-logo.stl"
+Generating binary STL
+Generating mesh from bitmap of size 200x246 with 1 levels
+Commencing mesh simplification on 44792 facets
+Indexing 134376 verticies
+Bloom filter prevented 22325 (16%) lookups
+Bloom filter had 73 (0%) false positives
+Indexing required 112051 lookups with mean search cost 82 comparisons
+Number of unique verticies in result index 22398
+Number of facets in result 6002
+Writing Binary STL output
+Completed in 0s</pre>
+      The default result in a smooth extrusion with a single level
+      (every pixel is opaque at this level) and white (colour 255)
+      used as transparent. </p>
+
+    <p>The <a href="debian-logo.stl">resulting STL file</a> was 
+    loaded into meshlab and non manifold faces removed.</p>
+
+      <img width="514" src="meshlab-debian-logo-stl.png"/>
+
+      <p>This shows the mesh is manifold additionally the face
+      simplification results can also be seen. Although not the
+      absolute simplest form the raw unsimplified version (obtained by
+      setting optimisation level to 0) has 44,792 faces instead of the
+      6002 found here.</p>
+
+    <p>The STL file was loaded into the Printrun project tool Pronterface which automatically ran skeinforge on the file to layer slice the input.</p>
+
+      <img width="640" src="pronterface-debian-logo-stl.png"/>
+
+      <p>My printer settings have a 0.4mm layer height which produced 5
+      layers for the 2mm of output. The slicing procedure took 66
+      seconds to complete, the same procedure on the unoptimised STL
+      took 81 seconds.</p>
+
+    <p>The print itself took 13 minutes 45 seconds to complete
+    and resulted in a reasonable result. I did not have any red
+    filament so the result is in yellow but is shown here next to a
+    read vinyl transfer sticker on the back of my laptop.</p>
+
+      <a href="printed-debian-logo-stl.jpg"><img width="640" src="printed-debian-logo-stl-s.jpg"/></a>
+
+    <p>The output dimensions are also correct</p>
+
+      <a href="100mm-debian-logo-stl.jpg"><img width="640" src="100mm-debian-logo-stl-s.jpg"/></a>
+
+
+  </div>
+
+  
+</body>
+</html>
