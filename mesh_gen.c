@@ -512,21 +512,13 @@ surfacegen_calcp(bitmap *bm,
                  options *options)
 {
     uint8_t pxl_val;
+    int res;
 
-    if (x < 0) {
-        return 0.0f;
-    }
-    /* check width not exceeded, cast is safe because value cannot be -ve from
-     * above test */
-    if ((unsigned int)x >= bm->width) {
-        return 0.0f;
-    }
-    if (y < 0) {
-        return 0.0f;
-    }
-    /* check height not exceeded, cast is safe because value cannot be -ve from
-     * above test */
-    if ((unsigned int)y >= bm->height) {
+    /* range check, casts are safe because value cannot be -ve from previous
+     * test.
+     */
+    if ((x < 0) || ((unsigned int)x >= bm->width) || 
+        (y < 0) || ((unsigned int)y >= bm->height)) {
         return 0.0f;
     }
         
@@ -535,9 +527,10 @@ surfacegen_calcp(bitmap *bm,
     if (pxl_val == options->transparent) {
         return 0.0f;
     } 
-    return (pxl_val + 1) * 
-        (options->depth / 256.0) * 
-        (options->levels / options->depth);
+
+    res = 1+(pxl_val + 1) / (256 / options->levels);
+
+    return res;
 }
 
 #define ADDSF(xa,ya,za,xb,yb,zb,xc,yc,zc) mesh_add_facet(mesh,           \
