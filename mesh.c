@@ -632,7 +632,124 @@ struct mesh *new_mesh(void)
     return mesh;
 }
 
-/* exported method docuemnted in mesh.h */
+static inline float 
+surfacegen_calcp(bitmap *bm,
+                 int x, 
+                 int y,
+                 options *options)
+{
+    uint8_t pxl_val;
+
+    if (x < 0) {
+        return 0.0f;
+    }
+    /* check width not exceeded, cast is safe because value cannot be -ve from
+     * above test */
+    if ((unsigned int)x >= bm->width) {
+        return 0.0f;
+    }
+    if (y < 0) {
+        return 0.0f;
+    }
+    /* check height not exceeded, cast is safe because value cannot be -ve from
+     * above test */
+    if ((unsigned int)y >= bm->height) {
+        return 0.0f;
+    }
+        
+    pxl_val = bm->data[(y * bm->width) + x];
+
+    if (pxl_val == options->transparent) {
+        return 0.0f;
+    } 
+    return (pxl_val + 1) * 
+        (options->depth / 256.0) * 
+        (options->levels / options->depth);
+}
+
+#define ADDSF(xa,ya,za,xb,yb,zb,xc,yc,zc) mesh_add_facet(mesh,           \
+        x + (xa * width), y + (ya * height), za * points[xa][ya],          \
+        x + (xb * width), y + (yb * height), zb * points[xb][yb],          \
+        x + (xc * width), y + (yc * height), zc * points[xc][yc])
+
+static void
+mesh_gen_surface(struct mesh *mesh,
+                 float x, float y, 
+                 float width, float height, 
+                 bool evenp, float points[2][2])
+{
+    if (evenp) {
+        if ( (points[0][0] != 0) || 
+             (points[1][1] != 0) || 
+             (points[0][1] != 0)) {
+            /* top surface */
+            ADDSF(0,0,1, 0,1,1, 1,1,1);
+
+            /* flat bottom */
+            ADDSF(0,0,0, 1,1,0, 0,1,0);
+        }
+
+        if ( (points[0][0] != 0) || 
+             (points[1][0] != 0) || 
+             (points[1][1] != 0)) {
+
+            /* top surface */
+            ADDSF(0,0,1, 1,1,1, 1,0,1);
+
+            /* flat bottom */
+            ADDSF(0,0,0, 1,0,0, 1,1,0);
+        }
+
+    } else {
+        if ( (points[0][0] != 0) || 
+             (points[1][0] != 0) || 
+             (points[0][1] != 0)) {
+
+            /* top surface */
+            ADDSF(0,0,1, 0,1,1, 1,0,1);
+
+            /* flat bottom */
+            ADDSF(0,0,0, 1,0,0, 0,1,0);
+        }
+
+        if ( (points[1][0] != 0) || 
+             (points[1][1] != 0) || 
+             (points[0][1] != 0)) {
+            /* top surface */
+            ADDSF(1,0,1, 0,1,1, 1,1,1);
+
+            /* flat bottom */
+            ADDSF(1,0,0, 1,1,0, 0,1,0);
+        }
+    }
+}
+
+static bool surfacegen(struct mesh *mesh, bitmap *bm, options *options)
+{
+    unsigned int yloop;
+    unsigned int xloop;
+    float points[2][2];
+
+    for (yloop = 0; yloop <= bm->height; yloop++) {
+        for (xloop = 0; xloop <= bm->width; xloop++) {
+
+            points[0][0] = surfacegen_calcp(bm, xloop - 1, yloop - 1, options);
+            points[1][0] = surfacegen_calcp(bm, xloop, yloop - 1, options);
+            points[0][1] = surfacegen_calcp(bm, xloop - 1, yloop, options);
+            points[1][1] = surfacegen_calcp(bm, xloop, yloop, options);
+
+            mesh_gen_surface(mesh,
+                             xloop, -(float)yloop,
+                             1, -1, 
+                             (((xloop + yloop) & 1) == 0), 
+                             points);
+
+        }
+    }
+    return true;
+}
+
+/* exported method documented in mesh.h */
 bool
 mesh_from_bitmap(struct mesh *mesh, bitmap *bm, options *options)
 {
@@ -648,18 +765,24 @@ mesh_from_bitmap(struct mesh *mesh, bitmap *bm, options *options)
     INFO("Generating mesh from bitmap of size %dx%d with %d levels\n",
          bm->width, bm->height, options->levels);
 
-    if ((options->finish == FINISH_SMOOTH) &&
-        (options->levels == 1)) {
-        meshgen = &mesh_gen_marching_squares;
+    if (options->finish == FINISH_SURFACE) {
+        surfacegen(mesh, bm, options);
+        
     } else {
-        meshgen = &mesh_gen_cube;
-    }
 
-    for (zloop = 0; zloop < options->levels; zloop++) {
-        for (yloop = 0; yloop < bm->height; yloop++) {
-            for (xloop = 0; xloop < bm->width; xloop++) {
-                faces = mesh_gen_get_face(bm, xloop, yloop, zloop, options);
-                meshgen(mesh, xloop, -(float)yloop, zloop, 1, 1, 1, faces);
+        if ((options->finish == FINISH_SMOOTH) &&
+            (options->levels == 1)) {
+            meshgen = &mesh_gen_marching_squares;
+        } else {
+            meshgen = &mesh_gen_cube;
+        }
+
+        for (zloop = 0; zloop < options->levels; zloop++) {
+            for (yloop = 0; yloop < bm->height; yloop++) {
+                for (xloop = 0; xloop < bm->width; xloop++) {
+                    faces = mesh_gen_get_face(bm, xloop, yloop, zloop, options);
+                    meshgen(mesh, xloop, -(float)yloop, zloop, 1, 1, 1, faces);
+                }
             }
         }
     }

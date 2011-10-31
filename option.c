@@ -103,6 +103,8 @@ read_options(int argc, char **argv)
                 options->finish = FINISH_RAW;
             } else if (strcmp(optarg, "smooth") == 0) {
                 options->finish = FINISH_SMOOTH;
+            } else if (strcmp(optarg, "surface") == 0) {
+                options->finish = FINISH_SURFACE;
             } else {
                 fprintf(stderr, "Unknown output finish %s\n", optarg);
                 goto read_options_error;

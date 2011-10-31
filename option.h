@@ -30,6 +30,7 @@ enum output_type {
 enum output_finish {
     FINISH_RAW,
     FINISH_SMOOTH,
+    FINISH_SURFACE,
 };
 
 typedef struct options {
