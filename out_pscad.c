@@ -32,6 +32,8 @@ bool output_flat_scad_polyhedron(bitmap *bm, int fd, options *options)
     int xoff; /* x offset so 3d model is centered */
     int yoff; /* y offset so 3d model is centered */
     FILE *outf;
+    uint32_t start_vcount;
+    struct vertex *vertex;
 
     outf = fdopen(dup(fd), "w");
 
@@ -48,10 +50,29 @@ bool output_flat_scad_polyhedron(bitmap *bm, int fd, options *options)
         return false;
     }
 
+    start_vcount = mesh->fcount * 3; /* each facet has 3 vertex */
+
+    INFO("Indexing %d vertices\n", start_vcount);
+    index_mesh(mesh, options->bloom_complexity, options->vertex_complexity);
+
+    INFO("Bloom filter prevented %d (%d%%) lookups\n",
+         start_vcount - mesh->find_count,
+         ((start_vcount - mesh->find_count) * 100) / start_vcount);
+    INFO("Bloom filter had %d (%d%%) false positives\n",
+         mesh->bloom_miss,
+         (mesh->bloom_miss * 100) / (mesh->find_count));
+    INFO("Indexing required %d lookups with mean search cost " D64F " comparisons\n",
+         mesh->find_count,
+         mesh->find_cost / mesh->find_count);
+
     if (options->optimise > 0) {
-        simplify_mesh(mesh, options->bloom_complexity);
-    } else {
-        index_mesh(mesh, options->bloom_complexity);
+        INFO("Simplification of mesh with %d facets using %d unique verticies\n",
+             mesh->fcount, mesh->vcount);
+
+        simplify_mesh(mesh, options->bloom_complexity, options->vertex_complexity);
+
+        INFO("Result mesh has %d facets using %d unique verticies\n",
+             mesh->fcount, mesh->vcount);
     }
 
     xoff = (bm->width / 2);
@@ -64,11 +85,12 @@ bool output_flat_scad_polyhedron(bitmap *bm, int fd, options *options)
 
     fprintf(outf, "module image(sx,sy,sz) {\n scale([sx, sy, sz]) polyhedron(points = [\n");
 
-    for (ploop = 0; ploop < mesh->pcount; ploop++) {
-        fprintf(outf, "[%f,%f,%f],\n", 
-                mesh->p[ploop].pnt.x - xoff, 
-                mesh->p[ploop].pnt.y + yoff, 
-                mesh->p[ploop].pnt.z);
+    for (ploop = 0; ploop < mesh->vcount; ploop++) {
+        vertex = vertex_from_index(mesh, ploop);
+        fprintf(outf, "[%f,%f,%f],\n",
+                vertex->pnt.x - xoff,
+                vertex->pnt.y + yoff,
+                vertex->pnt.z);
     }
 
     fprintf(outf, "], triangles = [\n");

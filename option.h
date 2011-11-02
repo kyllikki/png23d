@@ -49,6 +49,10 @@ typedef struct options {
                                     * for the bloom filter
                                     */
 
+    unsigned int vertex_complexity; /* The number of facets a vertex can refer
+                                    * to.
+                                    */
+
     bool verbose; /* make tool verbose about operations */
 
     char *infile; /* input filename */

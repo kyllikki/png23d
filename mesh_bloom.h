@@ -16,7 +16,7 @@
 bool mesh_bloom_init(struct mesh *mesh, unsigned int entries, unsigned int iterations);
 
 /** Add vertex to indexed list */
-idxpnt mesh_add_pnt(struct mesh *mesh, struct pnt *npnt);
+idxvtx mesh_add_pnt(struct mesh *mesh, struct pnt *npnt);
 
 #endif
 

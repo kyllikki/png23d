@@ -230,60 +230,69 @@ mesh_bloom_query(struct mesh *mesh, struct pnt *pnt)
 static inline uint32_t
 find_pnt(struct mesh *mesh, struct pnt *pnt)
 {
-    uint32_t idx = mesh->pcount;
+    uint32_t idx = mesh->vcount;
+    struct vertex *vertex;
 
-    mesh->find_count++;
+    mesh->find_count++; /* update stat */
 
     while (idx > 0) {
         idx--;
 
-        if ((mesh->p[idx].pnt.x == pnt->x) &&
-            (mesh->p[idx].pnt.y == pnt->y) &&
-            (mesh->p[idx].pnt.z == pnt->z)) {
-            mesh->find_cost += (mesh->pcount - idx);
+        vertex = vertex_from_index(mesh, idx);
+
+        if ((vertex->pnt.x == pnt->x) &&
+            (vertex->pnt.y == pnt->y) &&
+            (vertex->pnt.z == pnt->z)) {
+            mesh->find_cost += (mesh->vcount - idx); /* update stat */
             return idx;
         }
     }
 
-    idx = mesh->pcount;
-    mesh->find_cost += idx;
+    idx = mesh->vcount;
+    mesh->find_cost += idx; /* update stat */
+
     return idx;
 }
 
 /* exported interface documented in mesh_bloom.h */
-idxpnt
+idxvtx
 mesh_add_pnt(struct mesh *mesh, struct pnt *npnt)
 {
     uint32_t idx;
     bool in_bloom;
+    struct vertex *vertex;
 
     in_bloom = mesh_bloom_query(mesh, npnt);
 
     if (in_bloom == false) {
-        idx = mesh->pcount; /* not already in list */
+        idx = mesh->vcount; /* not already in list */
     } else {
         idx = find_pnt(mesh, npnt);
 
-        if (idx == mesh->pcount) {
+        if (idx == mesh->vcount) {
             /* seems the bloom failed to filter this one */
             mesh->bloom_miss++;
         }
     }
 
-    if (idx == mesh->pcount) {
+    if (idx == mesh->vcount) {
         /* not in array already */
-        if ((mesh->pcount + 1) > mesh->palloc) {
+        if ((mesh->vcount + 1) > mesh->valloc) {
             /* pnt array needs extending */
-            mesh->p = realloc(mesh->p,
-                              (mesh->palloc + 1000) *
-                              sizeof(struct vertex));
-            mesh->palloc += 1000;
+            mesh->v = realloc(mesh->v,
+                              (mesh->valloc + 1000) *
+                              (sizeof(struct vertex) + (sizeof(struct facet*) * mesh->vertex_fcount)));
+            mesh->valloc += 1000;
         }
 
         mesh_bloom_insert(mesh, npnt);
-        mesh->p[mesh->pcount].pnt = *npnt;
-        mesh->p[mesh->pcount].fcount = 0;
-        mesh->pcount++;
+
+        vertex = vertex_from_index(mesh, idx);
+        vertex->pnt = *npnt;
+        vertex->fcount = 0;
+
+        mesh->vcount++;
     }
+
     return idx;
 }

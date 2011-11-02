@@ -43,9 +43,10 @@ read_options(int argc, char **argv)
     options->height = 0.0;
     options->depth = 1.0;
     options->bloom_complexity = 2;
+    options->vertex_complexity = 16;
 
     /* parse comamndline options */
-    while ((opt = getopt(argc, argv, "Vvf:w:d:h:m:t:l:o:O:b:")) != -1) {
+    while ((opt = getopt(argc, argv, "Vvf:w:d:h:m:t:l:o:O:b:c:")) != -1) {
         switch (opt) {
 
         case 't': /* transparent colour */
@@ -123,12 +124,20 @@ read_options(int argc, char **argv)
             }
             break;
 
+        case 'c': /* indexed vertex complexity */
+            options->vertex_complexity = strtoul(optarg, NULL, 0);
+            if (options->vertex_complexity > 128) {
+                fprintf(stderr, "vertex complexity must be between 8 and 128\n");
+                goto read_options_error;
+            }
+            break;
+
         case 'm': /* mesh debug output filename */
             options->meshdebug = strdup(optarg);
             break;
 
         case 'V':
-            fprintf(stderr, "png23d version %d.%02d\n", 
+            fprintf(stderr, "png23d version %d.%02d\n",
                     VERSION / 100, VERSION % 100);
                 exit(EXIT_SUCCESS);
 

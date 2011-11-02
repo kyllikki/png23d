@@ -26,6 +26,7 @@
 
 #define DUMP_SVG_SIZE 500
 
+
 /* are two points the same location */
 static inline bool
 eqpnt(struct pnt *p0, struct pnt *p1)
@@ -146,7 +147,7 @@ dump_mesh_simplify_init(struct mesh *mesh)
 
     fprintf(mesh->dumpfile,
             "<h2>Mesh Simplify</h2><p>Starting with %d facets and %d vertexes.\n",
-            mesh->fcount, mesh->pcount);
+            mesh->fcount, mesh->vcount);
 
     fprintf(mesh->dumpfile, "<table><tr>\n");
 }
@@ -167,10 +168,10 @@ dump_mesh(struct mesh *mesh,
 #define SVGPX(loc) ( (loc) ) * (DUMP_SVG_SIZE / mesh->width)
 #define SVGPY(loc) (mesh->height - SVGPX(loc))
 
-    v0 = mesh->p + start;
+    v0 = vertex_from_index(mesh, start);
 
     if (removing) {
-        v1 = mesh->p + end;
+        v1 = vertex_from_index(mesh, end);
         fprintf(mesh->dumpfile,
                 "<tr><th>Operation %d Removing %u->%u</th>",
                 mesh->dumpno, start, end);
@@ -246,7 +247,7 @@ static void
 debug_mesh_fini(struct mesh *mesh, unsigned int start)
 {
     unsigned int floop;
-    struct vertex *v0 = mesh->p + start;
+    struct vertex *v0 = vertex_from_index(mesh, start);
 
     if (mesh->dumpfile == NULL)
         return;
@@ -255,7 +256,7 @@ debug_mesh_fini(struct mesh *mesh, unsigned int start)
 
     fprintf(mesh->dumpfile,
             "<p>Final mesh had %d facets and %d vertexes.</p>\n",
-            mesh->fcount, mesh->pcount);
+            mesh->fcount, mesh->vcount);
 
     fprintf(mesh->dumpfile,"<p>Mesh of all facets with common normal</p>\n<svg width=\"%d\" height=\"%d\" xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">\n", DUMP_SVG_SIZE, DUMP_SVG_SIZE);
 
@@ -294,12 +295,11 @@ debug_mesh_fini(struct mesh *mesh, unsigned int start)
 
 
 
-
 /* determinae if a vertex is topoligcally a removal candidate  */
 static bool is_candidate(struct mesh *mesh, int ivtx)
 {
     unsigned int floop; /* facet loop */
-    struct vertex *vtx = mesh->p + ivtx;
+    struct vertex *vtx = vertex_from_index(mesh, ivtx);
 
     /* Every facet at the end of the edge must have a normal which is parallel
      * and the same sign magnitude
@@ -317,13 +317,16 @@ static bool
 check_move_ok(struct mesh *mesh, unsigned int from, unsigned int to)
 {
     unsigned int floop; /* facet loop */
-    struct vertex *fvtx = mesh->p + from; /* from vertex */
-    struct vertex *tvtx = mesh->p + to; /* to vertex */
+    struct vertex *fvtx; /* from vertex */
+    struct vertex *tvtx; /* to vertex */
     bool degenerate = false;
     pnt nn;
     pnt *v0;
     pnt *v1;
     pnt *v2;
+
+    fvtx = vertex_from_index(mesh, from);
+    tvtx = vertex_from_index(mesh, to);
 
     for (floop = 0; floop < fvtx->fcount; floop++) {
         if (fvtx->facets[floop]->i[0] == from) {
@@ -372,8 +375,11 @@ find_adjacent(struct mesh *mesh, unsigned int ivtx, unsigned int *avtx)
 {
     unsigned int floop; /* facet loop */
     unsigned int vloop; /* vertex within facets */
-    struct vertex *vtx = mesh->p + ivtx; /* initial vertex */
+    struct vertex *vtx; /* initial vertex */
     unsigned int civtx; /* candidate vertex index */
+    struct vertex *cvtx; /* candidate vertex */
+
+    vtx = vertex_from_index(mesh, ivtx);
 
     /* examine each facet attached to starting vertex */
     for (floop = 0; floop < vtx->fcount; floop++) {
@@ -386,17 +392,19 @@ find_adjacent(struct mesh *mesh, unsigned int ivtx, unsigned int *avtx)
             }
 
             if (!is_candidate(mesh, civtx)) {
-                continue; /* skep non candidate verticies */
+                continue; /* skip non candidate verticies */
             }
+
+            cvtx = vertex_from_index(mesh, civtx);
 
             /* cannot merge edge verticies if it makes the mesh too
              * complicated to represent
              */
-            if (((vtx->fcount + mesh->p[civtx].fcount) - 2) > FACETPNT_CNT) {
+            if (((vtx->fcount + cvtx->fcount) - 2) > mesh->vertex_fcount) {
                 continue;
             }
 
-            if(!check_move_ok(mesh, civtx, ivtx)) {
+            if (!check_move_ok(mesh, civtx, ivtx)) {
                 continue;
             }
 
@@ -412,9 +420,30 @@ find_adjacent(struct mesh *mesh, unsigned int ivtx, unsigned int *avtx)
 }
 
 static bool
-remove_facet_from_vertex(struct facet *facet, struct vertex *vertex)
+add_facet_to_vertex(struct mesh *mesh,
+                    struct facet *facet,
+                    idxvtx ivertex)
+{
+    struct vertex *vertex;
+
+    vertex = vertex_from_index(mesh, ivertex);
+
+    assert(vertex->fcount < mesh->vertex_fcount);
+
+    vertex->facets[vertex->fcount++] = facet;
+
+    return true;
+}
+
+static bool
+remove_facet_from_vertex(struct mesh *mesh,
+                         struct facet *facet,
+                         idxvtx ivertex)
 {
     unsigned int floop;
+    struct vertex *vertex;
+
+    vertex = vertex_from_index(mesh, ivertex);
 
     for (floop = 0; floop < vertex->fcount; floop++) {
         if (vertex->facets[floop] == facet) {
@@ -433,10 +462,11 @@ remove_facet_from_vertex(struct facet *facet, struct vertex *vertex)
 static bool remove_facet(struct mesh *mesh, struct facet *facet)
 {
     struct facet *rfacet;
+
     /* remove facet from all three vertecies */
-    remove_facet_from_vertex(facet, mesh->p + facet->i[0]);
-    remove_facet_from_vertex(facet, mesh->p + facet->i[1]);
-    remove_facet_from_vertex(facet, mesh->p + facet->i[2]);
+    remove_facet_from_vertex(mesh, facet, facet->i[0]);
+    remove_facet_from_vertex(mesh, facet, facet->i[1]);
+    remove_facet_from_vertex(mesh, facet, facet->i[2]);
 
     /* only way to efficiently remove a facet is to move the one at the end of
      * the list here instead
@@ -446,14 +476,14 @@ static bool remove_facet(struct mesh *mesh, struct facet *facet)
     if (rfacet != facet) {
         /* was not already the end entry, have to do some work */
         memcpy(facet, rfacet, sizeof(struct facet));
-        /* fix up vertex pointers */
-        remove_facet_from_vertex(rfacet, mesh->p + facet->i[0]);
-        remove_facet_from_vertex(rfacet, mesh->p + facet->i[1]);
-        remove_facet_from_vertex(rfacet, mesh->p + facet->i[2]);
+        /* fix up vertex indexes */
+        remove_facet_from_vertex(mesh, rfacet, facet->i[0]);
+        remove_facet_from_vertex(mesh, rfacet, facet->i[1]);
+        remove_facet_from_vertex(mesh, rfacet, facet->i[2]);
 
-        mesh->p[facet->i[0]].facets[mesh->p[facet->i[0]].fcount++] = facet;
-        mesh->p[facet->i[1]].facets[mesh->p[facet->i[1]].fcount++] = facet;
-        mesh->p[facet->i[2]].facets[mesh->p[facet->i[2]].fcount++] = facet;
+        add_facet_to_vertex(mesh, facet, facet->i[0]);
+        add_facet_to_vertex(mesh, facet, facet->i[1]);
+        add_facet_to_vertex(mesh, facet, facet->i[2]);
 
     }
     return true;
@@ -471,26 +501,29 @@ static bool remove_facet(struct mesh *mesh, struct facet *facet)
 static bool
 move_facet_vertex(struct mesh *mesh,
                   struct facet *facet,
-                  unsigned int from,
-                  unsigned int to)
+                  idxvtx from,
+                  idxvtx to)
 {
+    struct vertex *tvtx;
+    tvtx = vertex_from_index(mesh, to);
+
     if (facet->i[0] == from) {
         facet->i[0] = to;
-        facet->v[0] = mesh->p[to].pnt;
+        facet->v[0] = tvtx->pnt;
     } else if (facet->i[1] == from) {
         facet->i[1] = to;
-        facet->v[1] = mesh->p[to].pnt;
+        facet->v[1] = tvtx->pnt;
     } else if (facet->i[2] == from) {
         facet->i[2] = to;
-        facet->v[2] = mesh->p[to].pnt;
+        facet->v[2] = tvtx->pnt;
     } else {
         return false;
     }
-    /* add ourselves to destination vertex */
-    mesh->p[to].facets[mesh->p[to].fcount++] = facet;
+    /* add facet to destination vertex */
+    add_facet_to_vertex(mesh, facet, to);
 
-    /* remove from old one */
-    if(remove_facet_from_vertex(facet, mesh->p + from) == false) {
+    /* remove facet from original vertex */
+    if (remove_facet_from_vertex(mesh, facet, from) == false) {
         return false;
     }
 
@@ -507,9 +540,11 @@ move_facet_vertex(struct mesh *mesh,
 }
 
 static bool
-facet_on_vertex(struct facet *facet, struct vertex *vertex)
+facet_on_vertex(struct mesh *mesh, struct facet *facet, idxvtx ivertex)
 {
     unsigned int floop;
+
+    struct vertex *vertex = vertex_from_index(mesh, ivertex);
 
     for (floop = 0; floop < vertex->fcount; floop++) {
         if (vertex->facets[floop] == facet)
@@ -524,20 +559,24 @@ facet_on_vertex(struct facet *facet, struct vertex *vertex)
 
 /* merge an edge by moving all facets from end of edge to start */
 static bool
-merge_edge(struct mesh *mesh, unsigned int start, unsigned int end)
+merge_edge(struct mesh *mesh, idxvtx start, idxvtx end)
 {
     struct facet *facet;
+    struct vertex *evertex;
 
     dump_mesh(mesh, true, start, end);
 
-    /* change all the facets on second vertex (ivtx1) to point at first virtex
+    evertex = vertex_from_index(mesh, end);
+
+    /* change all the facets on end vertex to point at start virtex
      * instead
      *
      * delete degenerate facets(two of their vertecies will be the same
      */
-    while (mesh->p[end].fcount > 0) {
-        facet = mesh->p[end].facets[0];
-        if (facet_on_vertex(facet, mesh->p + start)) {
+    while (evertex->fcount > 0) {
+        facet = evertex->facets[0];
+
+        if (facet_on_vertex(mesh, facet, start)) {
             remove_facet(mesh, facet); /* remove degenerate facet */
         } else {
             move_facet_vertex(mesh, facet, end, start);
@@ -578,7 +617,7 @@ static void verify_mesh(struct mesh *mesh)
 
 
 
-/* exported method docuemnted in mesh.h */
+/* exported method documented in mesh.h */
 bool
 mesh_add_facet(struct mesh *mesh,
           float vx0,float vy0, float vz0,
@@ -622,7 +661,7 @@ mesh_add_facet(struct mesh *mesh,
 }
 
 
-/* exported method docuemnted in mesh.h */
+/* exported method documented in mesh.h */
 struct mesh *new_mesh(void)
 {
     struct mesh *mesh;
@@ -662,7 +701,7 @@ mesh_from_bitmap(struct mesh *mesh, bitmap *bm, options *options)
     return res;
 }
 
-/* exported method docuemnted in mesh.h */
+/* exported method documented in mesh.h */
 void free_mesh(struct mesh *mesh)
 {
     debug_mesh_fini(mesh, 4);
@@ -670,12 +709,16 @@ void free_mesh(struct mesh *mesh)
     free(mesh->f);
 }
 
-/* exported method docuemnted in mesh.h */
+/* exported method documented in mesh.h */
 bool
-index_mesh(struct mesh *mesh, unsigned int bloom_complexity)
+index_mesh(struct mesh *mesh,
+           unsigned int bloom_complexity,
+           unsigned int vertex_fcount)
 {
-    unsigned int floop;
-    idxpnt p0, p1, p2;
+    struct facet *facet;
+    struct facet *fend;
+
+    mesh->vertex_fcount = vertex_fcount;
 
     /* initialise the bloom filter with enough entries for three vertex per
      * point and the complexity parameter (ok how many functions get run)
@@ -684,17 +727,19 @@ index_mesh(struct mesh *mesh, unsigned int bloom_complexity)
                     mesh->fcount * bloom_complexity * 3,
                     bloom_complexity * 2);
 
+    fend = mesh->f + mesh->fcount;
+
     /* manufacture pointlist and update indexed geometry */
-    for (floop = 0; floop < mesh->fcount; floop++) {
+    for (facet = mesh->f; facet < fend; facet++) {
 
         /* update facet with indexed points */
-        p0 = mesh->f[floop].i[0] = mesh_add_pnt(mesh, &mesh->f[floop].v[0]);
-        p1 = mesh->f[floop].i[1] = mesh_add_pnt(mesh, &mesh->f[floop].v[1]);
-        p2 = mesh->f[floop].i[2] = mesh_add_pnt(mesh, &mesh->f[floop].v[2]);
+        facet->i[0] = mesh_add_pnt(mesh, &facet->v[0]);
+        facet->i[1] = mesh_add_pnt(mesh, &facet->v[1]);
+        facet->i[2] = mesh_add_pnt(mesh, &facet->v[2]);
 
-        mesh->p[p0].facets[mesh->p[p0].fcount++] = &mesh->f[floop];
-        mesh->p[p1].facets[mesh->p[p1].fcount++] = &mesh->f[floop];
-        mesh->p[p2].facets[mesh->p[p2].fcount++] = &mesh->f[floop];
+        add_facet_to_vertex(mesh, facet, facet->i[0]);
+        add_facet_to_vertex(mesh, facet, facet->i[1]);
+        add_facet_to_vertex(mesh, facet, facet->i[2]);
     }
 
     return true;;
@@ -709,21 +754,24 @@ index_mesh(struct mesh *mesh, unsigned int bloom_complexity)
  * merge second vertex into first
  */
 bool
-simplify_mesh(struct mesh *mesh, unsigned int bloom_complexity)
+simplify_mesh(struct mesh *mesh,
+              unsigned int bloom_complexity,
+              unsigned int vertex_fcount)
 {
     unsigned int vloop = 0;
     unsigned int vtx1;
 
     /* ensure index tables are up to date */
-    if (mesh->p == NULL) {
-        index_mesh(mesh, bloom_complexity);
+    if (mesh->v == NULL) {
+        index_mesh(mesh, bloom_complexity, vertex_fcount);
     }
 
     dump_mesh_simplify_init(mesh);
 
-    while (vloop < mesh->pcount) {
+    while (vloop < mesh->vcount) {
         /* find a candidate edge */
-        if (is_candidate(mesh, vloop) && find_adjacent(mesh, vloop, &vtx1)) {
+        if (is_candidate(mesh, vloop) &&
+            find_adjacent(mesh, vloop, &vtx1)) {
 
             /* collapse verticies */
             merge_edge(mesh, vloop, vtx1);
