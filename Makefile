@@ -26,7 +26,7 @@ CFLAGS+=$(WARNFLAGS) -MMD -DVERSION=$(VERSION) $(OPTFLAGS) -g
 
 LDFLAGS+=-lpng
 
-PNG23D_OBJ=png23d.o option.o bitmap.o mesh.o mesh_gen.o mesh_bloom.o out_pgm.o out_scad.o out_pscad.o out_stl.o
+PNG23D_OBJ=png23d.o option.o bitmap.o mesh.o mesh_gen.o mesh_index.o out_pgm.o out_scad.o out_pscad.o out_stl.o
 
 .PHONY : all clean
 

@@ -100,8 +100,6 @@ bool mesh_from_bitmap(struct mesh *mesh, bitmap *bm, options *options);
 /** free mesh and all resources it holds */
 void free_mesh(struct mesh *mesh);
 
-/** update the mesh geometry index representation */
-bool index_mesh(struct mesh *mesh, unsigned int bloom_complexity, unsigned int vertex_fcount);
 
 /** remove uneccessary verticies */
 bool simplify_mesh(struct mesh *mesh, unsigned int bloom_complexity,unsigned int vertex_fcount);

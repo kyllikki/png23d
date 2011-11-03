@@ -39,7 +39,7 @@
 #include "bitmap.h"
 #include "mesh.h"
 #include "mesh_gen.h"
-#include "mesh_bloom.h"
+#include "mesh_index.h"
 
 
 /* Salt values.  These salts are XORed with the output of the hash function to
@@ -74,8 +74,8 @@ static const unsigned int salts[] = {
     0xa27e2a58, 0x66866fc5, 0x12519ce7, 0x437a8456,
 };
 
-/* exported interface documented in mesh_bloom.h */
-bool
+/** Initialise bloom filter */
+static bool
 mesh_bloom_init(struct mesh *mesh,
                 unsigned int entries,
                 unsigned int iterations)
@@ -254,8 +254,8 @@ find_pnt(struct mesh *mesh, struct pnt *pnt)
     return idx;
 }
 
-/* exported interface documented in mesh_bloom.h */
-idxvtx
+/** Add vertex to indexed list */
+static idxvtx
 mesh_add_pnt(struct mesh *mesh, struct pnt *npnt)
 {
     uint32_t idx;
@@ -295,4 +295,82 @@ mesh_add_pnt(struct mesh *mesh, struct pnt *npnt)
     }
 
     return idx;
+}
+
+/* exported interface documented in mesh_index.h */
+bool
+add_facet_to_vertex(struct mesh *mesh,
+                    struct facet *facet,
+                    idxvtx ivertex)
+{
+    struct vertex *vertex;
+
+    vertex = vertex_from_index(mesh, ivertex);
+
+    assert(vertex->fcount < mesh->vertex_fcount);
+
+    vertex->facets[vertex->fcount++] = facet;
+
+    return true;
+}
+
+/* exported interface documented in mesh_index.h */
+bool
+remove_facet_from_vertex(struct mesh *mesh,
+                         struct facet *facet,
+                         idxvtx ivertex)
+{
+    unsigned int floop;
+    struct vertex *vertex;
+
+    vertex = vertex_from_index(mesh, ivertex);
+
+    for (floop = 0; floop < vertex->fcount; floop++) {
+        if (vertex->facets[floop] == facet) {
+            vertex->fcount--;
+            for (; floop < vertex->fcount; floop++) {
+                vertex->facets[floop] = vertex->facets[floop + 1];
+            }
+            return true;
+        }
+    }
+    fprintf(stderr,"failed to remove facet from vertex\n");
+
+    return false;
+}
+
+/* exported method documented in mesh_index.h */
+bool
+index_mesh(struct mesh *mesh,
+           unsigned int bloom_complexity,
+           unsigned int vertex_fcount)
+{
+    struct facet *facet;
+    struct facet *fend;
+
+    mesh->vertex_fcount = vertex_fcount;
+
+    /* initialise the bloom filter with enough entries for three vertex per
+     * point and the complexity parameter (ok how many functions get run)
+     */
+    mesh_bloom_init(mesh,
+                    mesh->fcount * bloom_complexity * 3,
+                    bloom_complexity * 2);
+
+    fend = mesh->f + mesh->fcount;
+
+    /* manufacture pointlist and update indexed geometry */
+    for (facet = mesh->f; facet < fend; facet++) {
+
+        /* update facet with indexed points */
+        facet->i[0] = mesh_add_pnt(mesh, &facet->v[0]);
+        facet->i[1] = mesh_add_pnt(mesh, &facet->v[1]);
+        facet->i[2] = mesh_add_pnt(mesh, &facet->v[2]);
+
+        add_facet_to_vertex(mesh, facet, facet->i[0]);
+        add_facet_to_vertex(mesh, facet, facet->i[1]);
+        add_facet_to_vertex(mesh, facet, facet->i[2]);
+    }
+
+    return true;;
 }

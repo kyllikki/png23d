@@ -20,6 +20,7 @@
 #include "option.h"
 #include "bitmap.h"
 #include "mesh.h"
+#include "mesh_index.h"
 #include "out_pscad.h"
 
 
