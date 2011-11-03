@@ -20,6 +20,9 @@
 #include "option.h"
 #include "bitmap.h"
 #include "mesh.h"
+#include "mesh_gen.h"
+#include "mesh_index.h"
+#include "mesh_simplify.h"
 #include "out_stl.h"
 
 
@@ -42,18 +45,19 @@ static struct mesh *stl_mesh(bitmap *bm, int fd, options *options)
     }
 
     if (options->optimise > 0) {
-        uint32_t start_fcount = mesh->fcount * 3; /* each facet has 3 vertex */
+        uint32_t start_vcount = mesh->fcount * 3; /* each facet has 3 vertex */
+
+        INFO("Indexing %d vertices\n", start_vcount);
+        index_mesh(mesh, options->bloom_complexity, options->vertex_complexity);
 
         INFO("Simplification of mesh with %d facets using %d unique verticies\n",
-             mesh->fcount, start_fcount);
+             mesh->fcount, start_vcount);
 
-        simplify_mesh(mesh,
-                      options->bloom_complexity,
-                      options->vertex_complexity);
+        simplify_mesh(mesh);
 
         INFO("Bloom filter prevented %d (%d%%) lookups\n",
-             start_fcount - mesh->find_count,
-             ((start_fcount - mesh->find_count) * 100) / start_fcount);
+             start_vcount - mesh->find_count,
+             ((start_vcount - mesh->find_count) * 100) / start_vcount);
 
         INFO("Bloom filter had %d (%d%%) false positives\n",
              mesh->bloom_miss,

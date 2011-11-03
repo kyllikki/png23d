@@ -6,15 +6,13 @@
  *
  * This file is part of png23d. 
  * 
- * mesh generation routines header.
+ * mesh simplification. 
  */
 
-#ifndef PNG23D_MESH_GEN_H
-#define PNG23D_MESH_GEN_H 1
+#ifndef PNG23D_MESH_SIMPLIFY_H
+#define PNG23D_MESH_SIMPLIFY_H 1
 
-/** Convert raster image into triangle mesh
- *
- */
-bool mesh_from_bitmap(struct mesh *mesh, bitmap *bm, options *options);
+/** remove uneccessary verticies */
+bool simplify_mesh(struct mesh *mesh);
 
 #endif

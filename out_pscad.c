@@ -21,6 +21,8 @@
 #include "bitmap.h"
 #include "mesh.h"
 #include "mesh_index.h"
+#include "mesh_gen.h"
+#include "mesh_simplify.h"
 #include "out_pscad.h"
 
 
@@ -70,7 +72,7 @@ bool output_flat_scad_polyhedron(bitmap *bm, int fd, options *options)
         INFO("Simplification of mesh with %d facets using %d unique verticies\n",
              mesh->fcount, mesh->vcount);
 
-        simplify_mesh(mesh, options->bloom_complexity, options->vertex_complexity);
+        simplify_mesh(mesh);
 
         INFO("Result mesh has %d facets using %d unique verticies\n",
              mesh->fcount, mesh->vcount);

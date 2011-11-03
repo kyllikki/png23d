@@ -9,8 +9,8 @@
  * mesh generation bloom filter.
  */
 
-#ifndef PNG23D_MESH_BLOOM_H
-#define PNG23D_MESH_BLOOM_H 1
+#ifndef PNG23D_MESH_INDEX_H
+#define PNG23D_MESH_INDEX_H 1
 
 /** add a facet to a vndexed vertex */
 bool add_facet_to_vertex(struct mesh *mesh, struct facet *facet, idxvtx ivertex);

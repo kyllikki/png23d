@@ -12,7 +12,10 @@
 #ifndef PNG23D_MESH_H
 #define PNG23D_MESH_H 1
 
-#define FACETPNT_CNT 32
+/* Debug dump figure width */
+#define DUMP_SVG_SIZE 500
+#define SVGPX(loc) ( (loc) ) * (DUMP_SVG_SIZE / mesh->width)
+#define SVGPY(loc) (mesh->height - SVGPX(loc))
 
 /** A 3d point */
 typedef struct pnt {
@@ -84,33 +87,11 @@ struct mesh {
 /* create new empty mesh */
 struct mesh *new_mesh(void);
 
-/** Convert raster image into triangle mesh
- *
- * consider each pixel in the raster image:
- *   - generate a bitfield indicating on which sides of the pixel faces need to
- *     be covered to generate a convex manifold.
- *   - add triangle facets to list for each face present
- *
- * @todo This could probably be better converted to a marching cubes solution
- *       instead of this simple 2d extrusion of modified marching squares
- *       http://en.wikipedia.org/wiki/Marching_cubes
- */
-bool mesh_from_bitmap(struct mesh *mesh, bitmap *bm, options *options);
-
 /** free mesh and all resources it holds */
 void free_mesh(struct mesh *mesh);
 
-
-/** remove uneccessary verticies */
-bool simplify_mesh(struct mesh *mesh, unsigned int bloom_complexity,unsigned int vertex_fcount);
-
 /** initialise debugging on mesh */
 void debug_mesh_init(struct mesh *mesh, const char* filename);
-
-bool mesh_add_facet(struct mesh *mesh,
-                    float vx0,float vy0, float vz0,
-                    float vx1,float vy1, float vz1,
-                    float vx2,float vy2, float vz2);
 
 /** calculate vertex location from its index */
 static inline struct vertex *

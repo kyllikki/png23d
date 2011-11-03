@@ -2,30 +2,45 @@
 #
 # make fragment for png23d tests
 
-TESTS=square.stl c.stl o.stl s.stl spiral.stl \
-	 cube.astl steps.astl plus.astl plusa.astl plusb.astl \
-	calcube.stl debian-logo.scad
+BASE_TESTS=square-r c o s spiral cube steps plus plusa plusb calcube-r
+LOGO_TESTS=debian-logo.scad debian-logo-s.stl
+
+TESTS=$(LOGO_TESTS) $(addsuffix .stl, $(BASE_TESTS)) $(addsuffix -a.stl, $(BASE_TESTS)) $(addsuffix .scad, $(BASE_TESTS)) 
 
 TESTF=$(addprefix test/, $(TESTS))
 
-
-check:png23d $(TESTF)
+check:$(TESTF)
 
 # convert to binary stl
-test/%.stl:test/%.png
+test/%.stl:test/%.png png23d
 	./png23d -o stl -w 20 -d 10 $< $@
 
-#convert to ascii stl (cheats by also having 10 levels for these tests)
-test/%.astl:test/%.png
+# convert to ascii stl 
+# also has 10 levels for these tests
+test/%-a.stl:test/%.png png23d
 	./png23d -l 10 -o astl -w 20 -d 10 $< $@
 
-#convert to smoothed single layer polyhedron scad output
-test/%.scad:test/%.png
+# convert to binary stl with raw finish
+test/%-r.stl:test/%.png png23d
+	./png23d -f raw -o stl -w 20 -d 10 $< $@
+
+# convert to ascii stl with raw finish
+# also has 10 levels for these tests
+test/%-r-a.stl:test/%.png png23d
+	./png23d -f raw -l 10 -o astl -w 20 -d 10 $< $@
+
+# convert to binary stl with surface finish
+test/%-s.stl:test/%.png png23d
+	./png23d -f surface -o stl -w 20 -d 4 $< $@
+
+# convert to smoothed single layer polyhedron scad output
+test/%.scad:test/%.png png23d
 	./png23d -l 1 -f smooth -o pscad -w 50 -d 4 $< $@
 
+# convert to raw finish single layer polyhedron scad output
+test/%-r.scad:test/%.png png23d
+	./png23d -l 1 -f raw -o pscad -w 50 -d 4 $< $@
 
-test/calcube.stl:test/calcube.png
-	./png23d -f raw -o stl -w 20 -d 10 $< $@
 
 .PHONY: testclean
 
