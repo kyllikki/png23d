@@ -41,7 +41,12 @@ create_bitmap(const char *filename)
     unsigned int row_loop; /* loop to initialise row pointers */
     bitmap *bm = NULL;
 
-    fp = fopen(filename, "rb");
+
+    if (strcmp(filename, "-") == 0) {
+        fp = fdopen(dup(STDIN_FILENO), "rb");
+    } else {
+        fp = fopen(filename, "rb");
+    }
     if (!fp) {
         return bm;
     }
