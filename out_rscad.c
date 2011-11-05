@@ -16,7 +16,7 @@
 
 #include "option.h"
 #include "bitmap.h"
-#include "out_scad.h"
+#include "out_rscad.h"
 
 static void 
 output_scad_cube(FILE *outf, int x,int y, int z, int width, int height, int depth)
