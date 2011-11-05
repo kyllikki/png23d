@@ -702,8 +702,12 @@ mesh_from_bitmap(struct mesh *mesh, bitmap *bm, options *options)
         res = mesh_gen_squares(mesh, bm, options);
         break;
 
-    case FINISH_RAW:
+    case FINISH_CUBE:
         res = mesh_gen_cubes(mesh, bm, options);
+        break;
+
+    case FINISH_RECT:
+        fprintf(stderr, "Cannot generate mesh with Rectangular Cuboid finish\n");
         break;
     }
 

@@ -39,7 +39,7 @@ static struct mesh *stl_mesh(bitmap *bm, int fd, options *options)
     debug_mesh_init(mesh, options->meshdebug);
 
     if (mesh_from_bitmap(mesh, bm, options) == false) {
-        fprintf(stderr,"unable to convert bitmap to mesh\n");
+        fprintf(stderr,"unable to convert bitmap to mesh with requested finish\n");
         free_mesh(mesh);
         return NULL;
     }

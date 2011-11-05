@@ -6,7 +6,7 @@
  *
  * This file is part of png23d. 
  * 
- * Routines to output in SCAD format
+ * Routines to output union of rectangular cuboids in SCAD format
  */
 
 #include <stdint.h>
@@ -57,7 +57,7 @@ bool output_flat_scad_cubes(bitmap *bm, int fd, options *options)
         col_start = bm->width;
         for (col_loop = 0; col_loop < bm->width; col_loop++) {
             
-            if (bm->data[(row_loop * bm->width) + col_loop] < options->transparent) {
+            if (bm->data[(row_loop * bm->width) + col_loop] != options->transparent) {
                 /* this cell is "opaque" */
                 if (col_start > col_loop) {
                     /* mark start of run */

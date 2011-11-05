@@ -10,7 +10,7 @@ png23d - PNG to 3D file conversion
 .RB [ \-o
 .IR type ]
 .RB [ \-t
-.IR transparancy ]
+.IR transparency ]
 .RB [ \-l
 .IR quantisation ]
 .RB [ \-w
@@ -42,7 +42,7 @@ Make the program produce verbose output.
 The colour which is used for transparent output. Valid range is 0 to 255(default) or 'x' to disable.
 .TP
 .B \-l
-The number of levels into which the colourspace is divided. Valid range is 1(default) to 256. Note that as of version 1.0 not all output geenrators obey this parameter or may use a different finish type to that specified if the parameter is not 1.
+The number of levels into which the colour-space is divided. Valid range is 1(default) to 256. Note that as of version 1.0 not all output generators obey this parameter or may use a different finish type to that specified if the parameter is not 1.
 .TP
 .B \-w
 The output target width (x dimension). The source PNG width is used by default.
@@ -62,14 +62,14 @@ pgm@T{
 Output a PGM format bitmap. This can be used to verify 
 the level and quantisation parameters are set correctly.
 T}
-cscad@T{
-Output a scad format file for use with \fBopenscad\fR. 
+rscad@T{
+Output a scad format file for use with \fBOpenSCAD\fR. 
 This file will be comprised of a union of cubes. The 
 finish cannot be controlled (it is raw blocks) and the 
 resulting scad object may be very complex.
 T}
-pscad@T{
-Output a scad format file for use with \fBopenscad\fR. 
+scad@T{
+Output a scad format file for use with \fBOpenSCAD\fR. 
 This file will be comprised of a single polyhedron mesh. 
 For larger images this polygon will be exceptionally 
 complex and may contain many thousands of triangles.
@@ -89,7 +89,7 @@ T}
 .PP
 .TP
 .B \-f
-Specifies the finish out the output 3D mesh the default is \fBraw\fR which keeps all the square edges. The \fBsmooth\fR option gives sloped edges and reduces jaggies on output types that support it.
+Specifies the finish out the output 3D mesh the default is \fBcube\fR which keeps all the cube faces. The \fBsmooth\fR option uses a marching square algotithm to gives sloped edges and reduces jaggies. The \fBrect\fR finish is for the rscad output type only. The \fBsurface\fR type generates a simple heightmap surface.
 .TP
 .B \-O
 Specify the mesh optimisation level of 0, 1(the default) or 2. 
@@ -97,7 +97,7 @@ Specify the mesh optimisation level of 0, 1(the default) or 2.
 tab (@);
 l lx.
 0@T{
-No mesh optimisation will be performed. This will be fast to execute but the resulting mesh will be exceptionally complex and will almost certianly require additional processing in another tool such as meshlab.
+No mesh optimisation will be performed. This will be fast to execute but the resulting mesh will be exceptionally complex and will almost certainly require additional processing in another tool such as meshlab.
 T}
 1@T{
 Mesh simplification using edge removal algorithm will be performed. This process is relatively fast and the result maintains the exact blocky geometry from the generation process. Typically this produces reasonable results for non complex extrusions.

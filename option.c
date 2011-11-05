@@ -70,6 +70,21 @@ read_options(int argc, char **argv)
             }
             break;
 
+        case 'f': /* mesh generator */
+            if (strcmp(optarg, "cube") == 0) {
+                options->finish = FINISH_CUBE; /* cube face mesh */
+            } else if (strcmp(optarg, "rect") == 0) {
+                options->finish = FINISH_RECT; /* Rectangular Cuboids */
+            } else if (strcmp(optarg, "smooth") == 0) {
+                options->finish = FINISH_SMOOTH; /* Marching squares mesh */
+            } else if (strcmp(optarg, "surface") == 0) {
+                options->finish = FINISH_SURFACE; /* heightmap surface */
+            } else {
+                fprintf(stderr, "Unknown output finish %s\n", optarg);
+                goto read_options_error;
+            }
+            break;
+
         case 'w': /* output width */
             options->width = strtof(optarg, NULL);
             break;
@@ -85,10 +100,10 @@ read_options(int argc, char **argv)
         case 'o': /* output type */
             if (strcmp(optarg, "pgm") == 0) {
                 options->type = OUTPUT_PGM;
-            } else if (strcmp(optarg, "cscad") == 0) {
+            } else if (strcmp(optarg, "rscad") == 0) {
+                options->type = OUTPUT_RSCAD;
+            } else if (strcmp(optarg, "scad") == 0) {
                 options->type = OUTPUT_SCAD;
-            } else if (strcmp(optarg, "pscad") == 0) {
-                options->type = OUTPUT_PSCAD;
             } else if (strcmp(optarg, "stl") == 0) {
                 options->type = OUTPUT_STL;
             } else if (strcmp(optarg, "astl") == 0) {
@@ -99,18 +114,6 @@ read_options(int argc, char **argv)
             }
             break;
 
-        case 'f': /* output finish */
-            if (strcmp(optarg, "raw") == 0) {
-                options->finish = FINISH_RAW;
-            } else if (strcmp(optarg, "smooth") == 0) {
-                options->finish = FINISH_SMOOTH;
-            } else if (strcmp(optarg, "surface") == 0) {
-                options->finish = FINISH_SURFACE;
-            } else {
-                fprintf(stderr, "Unknown output finish %s\n", optarg);
-                goto read_options_error;
-            }
-            break;
 
         case 'O': /* optimisation level */
             options->optimise = strtoul(optarg, NULL,0);
@@ -149,6 +152,14 @@ read_options(int argc, char **argv)
         default: /* '?' */
             goto read_options_error;
         }
+    }
+
+
+    if (((options->finish == FINISH_RECT) ||
+         (options->finish == FINISH_SMOOTH)) &&
+        (options->levels != 1)) {
+        fprintf(stderr, "Rectangular Cuboid and Marching square finish only support a single level\n");
+        goto read_options_error;
     }
 
     /* files */

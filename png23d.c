@@ -78,13 +78,13 @@ int main(int argc, char **argv)
         ret = output_pgm(bm, fd, options);
         break;
 
-    case OUTPUT_SCAD:
-        INFO("Generating scad cubes\n");
+    case OUTPUT_RSCAD:
+        INFO("Generating Rectangular Cuboid OpenSCAD\n");
         ret = output_flat_scad_cubes(bm, fd, options);
         break;
 
-    case OUTPUT_PSCAD:
-        INFO("Generating scad ploygon\n");
+    case OUTPUT_SCAD:
+        INFO("Generating Polyhedron OpenSCAD\n");
         ret = output_flat_scad_polyhedron(bm, fd, options);
         break;
 

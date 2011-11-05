@@ -22,13 +22,14 @@
 enum output_type {
     OUTPUT_PGM,
     OUTPUT_SCAD,
-    OUTPUT_PSCAD,
+    OUTPUT_RSCAD,
     OUTPUT_STL,
     OUTPUT_ASTL,
 };
 
 enum output_finish {
-    FINISH_RAW,
+    FINISH_CUBE,
+    FINISH_RECT,
     FINISH_SMOOTH,
     FINISH_SURFACE,
 };
