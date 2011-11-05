@@ -34,7 +34,7 @@ read_options(int argc, char **argv)
     options->start_time = time(NULL);
 
     /* default values */
-    options->type = OUTPUT_ASTL;
+    options->type = OUTPUT_STL;
     options->finish = FINISH_SMOOTH;
     options->optimise = 1;
     options->transparent = 255;
