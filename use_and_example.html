@@ -14,7 +14,7 @@
     }
     #container {
       margin: 0 auto;
-      width: 700px;
+      width: 90%;
     }
     h1 { font-size: 3.8em; color: #ffffff; margin-bottom: 3px; }
     h1 .small { font-size: 0.4em; }
@@ -45,20 +45,54 @@
 
     <h2>Usage</h2>
 
-    <h3>Overview</h3>
+    <h3>General</h3>
 
     <p>Although the tool was primarily developed for 3D printing
     applications, the STL output is two maifold and most CAD
     applications will import the output correctly.</p>
 
-    <p>Usage is based around the commandline in a similar manner to
+    <p>Usage is based around the command line in a similar manner to
     the ImageMagick two dimensional image manipulation tool.</p>
 
+    <p>The full set of available command line switches may be found in
+    the man page accompanying the program source.</p>
+
+    <p>As outlined in the <a href="index.html">main overview</a>
+    conversion is a five stage process, the control of which will be
+    detaild in their own secions below.</p>
+
+    <h3>Source image</h3>
+
     <p>The input file must be a PNG image that the libpng library can
-    read and the output file may have any arbitrary filename. The
-    output type is controlled by the -o switch. The full set of
-    available command line switches may be found in the man page
-    provided.</p>
+    read and a filename must always be provided as a parameter.</p>
+
+    <p>The source filename may be given as a single - which indicates
+    input will be taken from the standard input. This allows for an
+    image conversion program to be chained with the png23d program.</p> 
+
+    <p>The example here uses the imagemagick convert tool to convert a
+    gif image to png output, with colour manipulation and cropping,
+    and immediatly passes the generated image to png23d without an
+    intermediate temporary file.
+<pre>convert JohnvonNeumann.gif -quantize GRAY -dither none -colors 256 -negate \
+-crop 350x510+90+60 +repage png:- | ./png23d -t x -f surface -o stl -l 25 \
+-d 9.6 -w 100 - JohnvonNeumann.stl</pre> 
+       </p>
+
+    <h3>Output</h3>
+
+    <p>The output file may have any arbitrary filename which must be specified.</p>
+
+    <p>The output filename may be given as a single - which indicates
+    output will be sent from the standard output.</p>
+
+    <p> The output file format is controlled by the -o switch. The file formats available as of version 1.1 are:<ul>
+	<li><b>stl</b> <a href="http://en.wikipedia.org/wiki/STL_format">3D systems Stereolithography</a> in binary (The default)</li>
+	<li><b>astl</b> <a href="http://en.wikipedia.org/wiki/STL_format">3D systems Stereolithography</a> in ASCII</li>
+	<li><b>pscad</b> <a href="http://www.openscad.org/">OpenSCAD</a> module describing a <a href="http://en.wikibooks.org/wiki/OpenSCAD_User_Manual/Primitive_Solids#polyhedron">polyhedron</a> in ASCII</li>
+	<li><b>cscad</b> <a href="http://www.openscad.org/">OpenSCAD</a> module describing union of <a href="http://en.wikibooks.org/wiki/OpenSCAD_User_Manual/Primitive_Solids#cube">cubes</a> in ASCII</li>
+	<li><b>pgm</b> <a href="http://en.wikipedia.org/wiki/Portable_graymap">Netpbm</a> (PGM type) in ASCII</li>
+    </ul></p>
 
     <h3>3D printing</h3>
 

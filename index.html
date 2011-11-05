@@ -14,7 +14,7 @@
     }
     #container {
       margin: 0 auto;
-      width: 700px;
+      width: 90%;
     }
     h1 { font-size: 3.8em; color: #ffffff; margin-bottom: 3px; }
     h1 .small { font-size: 0.4em; }
@@ -54,6 +54,55 @@
     dimensional representation. Two output formats (OpenSCAD and STL)
     are currently supported with several options for output
     parameters.</p>
+
+    <h2>Overview</h2>
+
+    <p>The task this utility performs is straightforward to describe,
+    if a little more challenging to realise. The conversion of a two
+    dimensional image into a three dimensional form requires
+    construction of that dimension from an existing image property.</p> 
+
+    <p>If the x and y dimensions are used directly from the image the
+    only remaining source of information is the pixel colour. From the
+    image
+    a <a href="http://en.wikipedia.org/wiki/Height_map">heightmap</a>
+    is constructed and used to generate the additional dimension
+    information.</p>
+
+    <p>The operations used to perform the conversion are:
+      <ol>
+	<li>Read, decode and process the source image into a greyscale bitmap.</li>
+	<li>Generate a <a href="http://en.wikipedia.org/wiki/Polygon_mesh">triangle mesh</a> creating a manifold polygon.</li>
+	<li>Index the vetices of the generated mesh.</li>
+	<li>Simplify the generated mesh.</li>
+	<li>Write the generated mesh to output file in selected format.</li>
+      </ol>
+    </p>
+
+    <p>Each of these steps is the subject of academic study and could
+    be extended beyond the basic algorithms currently used to obtain
+    &quot;better&quot; results</p>
+
+    <p>The &quot;best&quot; output is difficult to define as for one
+    application it could mean a mesh which is faithful to the source
+    image but for a different application it could mean an
+    approximation that has a low face count.  The command line
+    parameters give control over the steps to allow for these
+    differing requirements, these are documented in detail in the
+    <a href="use_and_example.html">usage and examples</a> section.</p>
+
+    <p>The mesh generation strategy has the largest influence on the
+    final model. The utility, as of version 1.1, has two general purpose
+    and one narrow purpose generators giving some flexibility to the
+    user.</p>
+
+    <p>The aim of the mesh simplification step is to reduce the number
+    of faces and vertices without detrimentally affecting the models
+    topology. The implementation as of version 1.1 only allows for a
+    single simplification method. The half-edge remove method
+    implemented produces adequate results for synthetic models with
+    mainly planar faces but fares poorly on other mesh types.</p>
+
 
     <a href="building.html"><h2>Downloading and Building</h2></a>
 
