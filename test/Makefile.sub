@@ -11,18 +11,18 @@ TESTF=$(addprefix test/, $(TESTS))
 
 check:$(TESTF)
 
-# convert to binary stl
+# convert to binary stl with smooth finish
 test/%.stl:test/%.png png23d
+	./png23d -l 1 -f smooth -o stl -w 20 -d 10 $< $@
+
+# convert to binary stl with smooth finish
+test/%-c.stl:test/%.png png23d
 	./png23d -l 1 -f smooth -o stl -w 20 -d 10 $< $@
 
 # convert to ascii stl 
 # also has 10 levels for these tests
 test/%-a.stl:test/%.png png23d
 	./png23d -l 10 -f cube -o astl -w 20 -d 10 $< $@
-
-# convert to binary stl with cube finish
-test/%-c.stl:test/%.png png23d
-	./png23d -f cube -o stl -w 20 -d 10 $< $@
 
 # convert to ascii stl with cube finish
 # also has 10 levels for these tests
