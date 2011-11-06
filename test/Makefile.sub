@@ -2,10 +2,10 @@
 #
 # make fragment for png23d tests
 
-BASE_TESTS=square-r c o s spiral cube steps plus plusa plusb calcube-r
+BASE_TESTS=square-c c o s spiral cube steps plus plusa plusb calcube-c
 LOGO_TESTS=debian-logo.scad debian-logo-s.stl
 
-TESTS=$(LOGO_TESTS) $(addsuffix .stl, $(BASE_TESTS)) $(addsuffix -a.stl, $(BASE_TESTS)) $(addsuffix .scad, $(BASE_TESTS)) 
+TESTS=$(LOGO_TESTS) $(addsuffix .stl, $(BASE_TESTS)) $(addsuffix -a.stl, $(BASE_TESTS)) $(addsuffix .scad, $(BASE_TESTS)) $(addsuffix -r.scad, $(BASE_TESTS)) 
 
 TESTF=$(addprefix test/, $(TESTS))
 
@@ -13,21 +13,21 @@ check:$(TESTF)
 
 # convert to binary stl
 test/%.stl:test/%.png png23d
-	./png23d -o stl -w 20 -d 10 $< $@
+	./png23d -l 1 -f smooth -o stl -w 20 -d 10 $< $@
 
 # convert to ascii stl 
 # also has 10 levels for these tests
 test/%-a.stl:test/%.png png23d
-	./png23d -l 10 -o astl -w 20 -d 10 $< $@
+	./png23d -l 10 -f cube -o astl -w 20 -d 10 $< $@
 
-# convert to binary stl with raw finish
-test/%-r.stl:test/%.png png23d
-	./png23d -f raw -o stl -w 20 -d 10 $< $@
+# convert to binary stl with cube finish
+test/%-c.stl:test/%.png png23d
+	./png23d -f cube -o stl -w 20 -d 10 $< $@
 
-# convert to ascii stl with raw finish
+# convert to ascii stl with cube finish
 # also has 10 levels for these tests
-test/%-r-a.stl:test/%.png png23d
-	./png23d -f raw -l 10 -o astl -w 20 -d 10 $< $@
+test/%-c-a.stl:test/%.png png23d
+	./png23d -f cube -l 10 -o astl -w 20 -d 10 $< $@
 
 # convert to binary stl with surface finish
 test/%-s.stl:test/%.png png23d
@@ -35,12 +35,15 @@ test/%-s.stl:test/%.png png23d
 
 # convert to smoothed single layer polyhedron scad output
 test/%.scad:test/%.png png23d
-	./png23d -l 1 -f smooth -o pscad -w 50 -d 4 $< $@
+	./png23d -l 1 -f smooth -o scad -w 50 -d 4 $< $@
 
 # convert to raw finish single layer polyhedron scad output
-test/%-r.scad:test/%.png png23d
-	./png23d -l 1 -f raw -o pscad -w 50 -d 4 $< $@
+test/%-c.scad:test/%.png png23d
+	./png23d -l 1 -f cube -o scad -w 50 -d 4 $< $@
 
+# convert to single layer rectangular cuboid scad output
+test/%-c-r.scad test/%-r.scad:test/%.png png23d
+	./png23d -l 1 -o rscad -w 50 -d 4 $< $@
 
 .PHONY: testclean
 
