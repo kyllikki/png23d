@@ -47,13 +47,27 @@
       <a href="http://en.wikipedia.org/wiki/Lithophane">Lithophane</a>
       of Alan Turing and shows a physical print of the result.</p>
 
-    <p>This example was inspired by <a href="http://www.thingiverse.com/thing:12801">Rupert Rawnsley Alan Turing Lithophane</a>.</p>
+    <p>This example was inspired
+    by <a href="http://www.thingiverse.com/thing:12801">Rupert
+    Rawnsley Alan Turing Lithophane</a>.</p>
 
-    <p>I decided the output would be 100mm wide and 32 layers deep (12.8mm with 0.4mm layers) as that seemed to keep the mesh complexity to reasonable values. I therefore needed an image approximately 200-300pixels wide and of suitable contrast</p>
+    <p>I decided the output would be 100mm wide and 32 layers deep
+    (12.8mm with 0.4mm layers) as that seemed to keep the mesh
+    complexity to reasonable values. I therefore needed an image
+    approximately 200-300pixels wide and of suitable contrast.</p>
 
-    <p>An image of Turing was obtained from the <a href="http://www.npg.org.uk/collections/search/portraitLarge/mw63680/Alan-Mathison-Turing?LinkID=mp18700&role=sit&rNo=2">National Portrait Gallery</a>. The 370x500 pixel sample image was cropped and scaled to a 280x380 head shot.<p> 
+    <p>An image of Turing was obtained from
+    the <a href="http://www.npg.org.uk/collections/search/portraitLarge/mw63680/Alan-Mathison-Turing?LinkID=mp18700&role=sit&rNo=2">National
+    Portrait Gallery</a>. The 370x500 pixel sample image was cropped
+    and scaled to a 280x380 head shot.<p>
 
-    <p>The image colours were then altered using the Gimp. The image was changed to grayscale then level tool to increase the contrast and use the whole available colour range. Then the image was converted to a 32 entry linear indexed palette with no dithering and back to a greyscale image. Finally the image was inverted, this is necessary because in a lithophane the lightest areas require the thinnest material.</p>
+    <p>The image colours were then altered using the Gimp. The image
+    was changed to grayscale then level tool to increase the contrast
+    and use the whole available colour range. Then the image was
+    converted to a 32 entry linear indexed palette with no dithering
+    and back to a greyscale image. Finally the image was inverted,
+    this is necessary because in a lithophane the lightest areas
+    require the thinnest material.</p>
 
     <img width="280" src="alan_turing-inv.png"/>
 
@@ -79,9 +93,12 @@ Completed in 22s</pre>
 
     <img width="492" src="meshlab-alan_turing-raw-stl.png"/>
 
-    <p>Although usable in this form the mesh still has over 400,000 faces and would take an excessive time to run through skeinforge (I terminated it after 2 hours waiting).</p>
+    <p>Although usable in this form the mesh still has over 400,000
+    faces and would take an excessive time to run through skeinforge
+    (I terminated it after 2 hours waiting).</p>
 
-    <p>To reduce the complexity the meshlab quadratic decimation filter was applied to reduce the face count to 100,000.</p>
+    <p>To reduce the complexity the meshlab quadratic decimation
+    filter was applied to reduce the face count to 100,000.</p>
 
     <img width="354" src="meshlab-alan_turing-decimation-dialog.png"/>
 
@@ -89,7 +106,9 @@ Completed in 22s</pre>
 
     <img width="492" src="meshlab-alan_turing-simplified-stl.png"/>
     
-    <p>The STL file was loaded into the Printrun project tool Pronterface which automatically ran skeinforge on the file to layer slice the input.</p>
+    <p>The STL file was loaded into the Printrun project tool
+    Pronterface which automatically ran skeinforge on the file to
+    layer slice the input.</p>
 
       <img width="640" src="pronterface-alan_turing-simplified-stl.png"/>
 
@@ -98,10 +117,10 @@ Completed in 22s</pre>
     36 layers were generated. The slicing procedure took 38minutes
     46seconds to complete.</p>
 
-    <p>The print itself took a few hours to complete, using around 10m
+    <p>The print itself took a few hours to complete, using around 8 metres
     of 3mm filament, resulting in a reasonable lithophane.</p>
 
-      <a href="printing-alan_turing.jpg"><img width="320" src="printing-alan_turing-s.jpg"/></a>
+    <a href="printing-alan_turing.jpg"><img width="320" src="printing-alan_turing-s.jpg"/></a>
 
 
     <p>I did not have any white filament, nor enough
