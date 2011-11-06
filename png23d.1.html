@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset='utf-8'>
+
+  <title>Man page of png23d</title>
+
+  <style type="text/css">
+    body {
+      margin-top: 1.0em;
+      background-color: #000000;
+      font-family: Helvetica, Arial, FreeSans, san-serif;
+      color: #ffffff;
+    }
+    #container {
+      margin: 0 auto;
+      width: 90%;
+    }
+    h1 { font-size: 3.8em; color: #ffffff; margin-bottom: 3px; }
+    h1 .small { font-size: 0.4em; }
+    h1 a { text-decoration: none }
+    h2 { font-size: 1.5em; color: #ffffff; clear: both; }
+    h3 { color: #ffffff; }
+    img { float: left; }
+    p { clear: both; }
+    li { clear: both; }
+    a { color: #0000ff; }
+    .description { font-size: 1.2em; margin-bottom: 30px; margin-top: 30px; font-style: italic;}
+    .download { float: right; }
+    pre { background: #000; color: #fff; padding: 15px;}
+    hr { border: 0; width: 80%; border-bottom: 1px solid #aaa}
+    .footer { text-align:center; padding-top:30px; font-style: italic; }
+  </style>
+</head>
+
+<body>
+  <div id="container">
+<H1>png23d</H1>
+Section: User Commands  (1)<BR>Updated: 18th October 2011<BR><A HREF="#index">Index</A>
+
+<A NAME="lbAB">&nbsp;</A>
+<H2>NAME</H2>
+
+png23d - PNG to 3D file conversion
+<A NAME="lbAC">&nbsp;</A>
+<H2>SYNOPSIS</H2>
+
+<B>png23d</B>
+
+[<B>-V</B>]
+
+[<B>-v</B>]
+
+[<B>-f</B>
+
+<I>finish</I>]
+
+[<B>-o</B>
+
+<I>type</I>]
+
+[<B>-t</B>
+
+<I>transparency</I>]
+
+[<B>-l</B>
+
+<I>quantisation</I>]
+
+[<B>-w</B>
+
+<I>width</I>]
+
+[<B>-h</B>
+
+<I>height</I>]
+
+[<B>-d</B>
+
+<I>depth</I>]
+
+[<B>-O</B>
+
+<I>optimisation</I>]
+
+[<B>-b</B>
+
+<I>complexity</I>]
+
+[<B>-m</B>
+
+<I>filename</I>]
+
+input output
+<A NAME="lbAD">&nbsp;</A>
+<H2>DESCRIPTION</H2>
+
+<P>
+
+<I>png23d</I>
+
+is a tool which converts a PNG image into a three dimensional file suitable for modelling applications especially for 3D printers.
+<A NAME="lbAE">&nbsp;</A>
+<H2>OPTIONS</H2>
+
+<DL COMPACT>
+<DT><B>-V</B>
+
+<DD>
+Display the program version and exit.
+<DT><B>-v</B>
+
+<DD>
+Make the program produce verbose output.
+<DT><B>-t</B>
+
+<DD>
+The colour which is used for transparent output. Valid range is 0 to 255(default) or 'x' to disable.
+<DT><B>-l</B>
+
+<DD>
+The number of levels into which the colour-space is divided. Valid range is 1(default) to 256. Note that as of version 1.0 not all output generators obey this parameter or may use a different finish type to that specified if the parameter is not 1.
+<DT><B>-w</B>
+
+<DD>
+The output target width (x dimension). The source PNG width is used by default.
+<DT><B>-h</B>
+
+<DD>
+The output target height (y dimension). Note most outputs will simply ignore this parameter and retain the original image aspect ratio based on the width parameter.
+<DT><B>-d</B>
+
+<DD>
+The output target depth (z dimension) The number of levels specified is used as the default.
+<DT><B>-o</B>
+
+<DD>
+Specifies the output type
+<TABLE>
+<TR VALIGN=top><TD>pgm</TD><TD>
+Output a PGM format bitmap. This can be used to verify 
+the level and quantisation parameters are set correctly.
+<BR></TD></TR>
+<TR VALIGN=top><TD>rscad</TD><TD>
+Output a scad format file for use with <B>OpenSCAD</B>. 
+This file will be comprised of a union of cubes. The 
+finish cannot be controlled (it is raw blocks) and the 
+resulting scad object may be very complex.
+<BR></TD></TR>
+<TR VALIGN=top><TD>scad</TD><TD>
+Output a scad format file for use with <B>OpenSCAD</B>. 
+This file will be comprised of a single polyhedron mesh. 
+For larger images this polygon will be exceptionally 
+complex and may contain many thousands of triangles.
+<BR></TD></TR>
+<TR VALIGN=top><TD>stl</TD><TD>
+Output a binary stereolithography format file. 
+These files are comprised of simple triangles, the output 
+can be directly used by several 3D printing systems.
+The generated meshes are a convex manifold but are not 
+simplified.
+<BR></TD></TR>
+<TR VALIGN=top><TD>astl</TD><TD>
+Same as the stl entry but generates a textural file 
+instead of binary.
+<BR></TD></TR>
+</TABLE>
+
+</DL>
+<P>
+
+<DL COMPACT>
+<DT><B>-f</B>
+
+<DD>
+Specifies the finish out the output 3D mesh the default is <B>cube</B> which keeps all the cube faces. The <B>smooth</B> option uses a marching square algotithm to gives sloped edges and reduces jaggies. The <B>rect</B> finish is for the rscad output type only. The <B>surface</B> type generates a simple heightmap surface.
+<DT><B>-O</B>
+
+<DD>
+Specify the mesh optimisation level of 0, 1(the default) or 2. 
+<TABLE>
+<TR VALIGN=top><TD>0</TD><TD>
+No mesh optimisation will be performed. This will be fast to execute but the resulting mesh will be exceptionally complex and will almost certainly require additional processing in another tool such as meshlab.
+<BR></TD></TR>
+<TR VALIGN=top><TD>1</TD><TD>
+Mesh simplification using edge removal algorithm will be performed. This process is relatively fast and the result maintains the exact blocky geometry from the generation process. Typically this produces reasonable results for non complex extrusions.
+<BR></TD></TR>
+<TR VALIGN=top><TD>2</TD><TD>
+Mesh simplification using quadratic surface removal. This has not yet been implemented! Use a tool such as meshlab if you require this type of simplification.
+<BR></TD></TR>
+</TABLE>
+
+</DL>
+<P>
+
+<DL COMPACT>
+<DT><B>-b</B>
+
+<DD>
+The bloom filter complexity which controls the size of the filter and number of iterations(functions) used by vertex indexing as part of the mesh simplification process. Valid range is 0 to 16 with a default of 2. Most users will never need to alter this parameter. It is useful only if they are experiencing a high filter miss rate on exceptionally large meshes with 10 million facets or more).
+<DT><B>-m</B>
+
+<DD>
+The filename to save the mesh optimisation debug output to. This is a generated html file which graphically shows each stage of the mesh simplification. This is useful only for debugging purposes and for images above a few hundred facets the output can run to many hundreds of megabytes.
+<DT><B>input</B>
+
+<DD>
+Specifies the source PNG file to convert from.
+<DT><B>output</B>
+
+<DD>
+Specifies the output file.
+</DL>
+<A NAME="lbAF">&nbsp;</A>
+<H2>EXAMPLES</H2>
+
+<P>
+
+To convert from 
+<I>foo.png</I>
+
+to 
+<I>foo.scad</I>
+
+in scad polyhedron output format:
+<DL COMPACT>
+<DT><DD>
+png23d -o pscad foo.png foo.scad
+</DL>
+<P>
+
+To convert from 
+<I>foo.png</I>
+
+to 
+<I>foo.stl</I>
+
+in binary STL output format with smooth finish:
+<DL COMPACT>
+<DT><DD>
+png23d -f smooth -o stl foo.png foo.scad
+</DL>
+<P>
+
+To convert from 
+<I>foo.png</I>
+
+to 
+<I>foo.stl</I>
+
+in ascii STL output format with smooth finish and 50 unit output width:
+<DL COMPACT>
+<DT><DD>
+png23d -f smooth -o astl -w 50 foo.png foo.scad
+
+
+</DL>
+<A NAME="lbAG">&nbsp;</A>
+<H2>AUTHOR</H2>
+
+Copyright &#169; 2011 Vincent Sanders
+<P>
+Permission is hereby granted, free of charge, to any person obtaining a copy 
+of this software and associated documentation files (the &quot;Software&quot;), to deal
+in the Software without restriction, including without limitation the rights 
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell 
+copies of the Software, and to permit persons to whom the Software is 
+furnished to do so, subject to the following conditions: 
+<BR>&nbsp;
+The above copyright notice and this permission notice shall be included in 
+all copies or substantial portions of the Software. 
+<BR>&nbsp;
+THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN 
+THE SOFTWARE. 
+<P>
+
+<HR>
+<A NAME="index">&nbsp;</A><H2>Index</H2>
+<DL>
+<DT><A HREF="#lbAB">NAME</A><DD>
+<DT><A HREF="#lbAC">SYNOPSIS</A><DD>
+<DT><A HREF="#lbAD">DESCRIPTION</A><DD>
+<DT><A HREF="#lbAE">OPTIONS</A><DD>
+<DT><A HREF="#lbAF">EXAMPLES</A><DD>
+<DT><A HREF="#lbAG">AUTHOR</A><DD>
+</DL>
+<HR>
+This document was created by
+<A HREF="/cgi-bin/man/man2html">man2html</A>,
+using the manual pages.<BR>
+Time: 00:42:58 GMT, November 06, 2011
+</div>
+</BODY>
+</HTML>

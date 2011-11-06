@@ -55,7 +55,8 @@
     the ImageMagick two dimensional image manipulation tool.</p>
 
     <p>The full set of available command line switches may be found in
-    the man page accompanying the program source.</p>
+    the <a href="png23d.1.html">man page</a> accompanying the program
+    source.</p>
 
     <p>As outlined in the <a href="index.html">main overview</a>
     conversion is a five stage process, the control of which will be
@@ -65,6 +66,8 @@
 
     <p>The input file must be a PNG image that the libpng library can
     read and a filename must always be provided as a parameter.</p>
+
+    <p>The image is converted into a 256 level grey scale image using libpng.</p>
 
     <p>The source filename may be given as a single - which indicates
     input will be taken from the standard input. This allows for an
@@ -79,6 +82,81 @@
 -d 9.6 -w 100 - JohnvonNeumann.stl</pre> 
        </p>
 
+    <h3>Mesh Generation</h3>
+
+    <p>This part of the process has a large impact on the output and
+    should be tailored to the final use of the model.</p>
+
+    <p>The x and y components of the generated mesh are, in all cases,
+    derived from the source images dimensions. For 3D printing these
+    should be arranged to give around a 0.5mm spacial resolution in
+    final scaled output (see the 3D printing section).</p>
+
+    <p>The z component is synthesised form the source greyscale image
+    levels. The number of levels is controlled by the -l parameter. To
+    illustrate, if four layers are selected colours from 0-63 will
+    generate mesh output on layer 1, 64-127 on layer 2 and so on.</p>
+
+    <p>In adition to the number of layers a single colour may be
+    selected, with the -t switch, as &quot;transparent&quot; which
+    will result in no mesh being present at that x-y location. One
+    oddity here is that if a single layer is specified and the
+    transparancy is turned off (with -t x) the output will be a solid
+    block.</p>
+
+    <p>currently there are four generation methods implemented, two
+    general purpose and two which operate on a single layer. These
+    methods are selected with the -f parameter.</p>
+
+    <dl>
+
+      <dt>rect</dt>
+
+      <dd>This finish can only be used on single layer output. The
+      bitmap is considered one pixel at a time and runs of non
+      transparent pixes are converted
+      into <a href="http://en.wikipedia.org/wiki/Cuboid">retangular
+      cuboids</a>. This finish is <em>only</em> useful with the rscad
+      output type, specifying it with any other output type will
+      generate an error.</dd>
+
+      <dt>smooth</dt>
+      <dd>This finish can only be used on single layer output. The non
+      transparent areas of the bitmap are passed through
+      the <a href="http://en.wikipedia.org/wiki/Marching_squares">marching
+      squares</a> algorithm which produces a reasonable contour on the
+      filled areas. This finish is the default and is especially good
+      for converting 2D logos and text into a smooth contoured three
+      dimensional extrusion suitable for use in OpenSCAD models.</dd>
+
+      <dt>cube</dt>
+      <dd>This finish may be used with any number of valid levels. The
+      bitmap is scanned and the transparency of each unit voxel
+      considerd (as defined by its x and y position in the bitmap and
+      its colour value as the z component). The faces of an opaque
+      voxel whose neighbours are transparent get that face added to
+      the mesh (as two right angled triangles). This finish produces a
+      manifold mesh with (potentially) many levels. Caution should be
+      employed using this finish for non-synthetic image sources as
+      the result may become extremly complex and challenging to
+      simplify.</dd>
+
+      <dt>surface</dt>
+      <dd>This finish may be used with any number of valid
+      levels. This finish is more suitable for
+      complex <a href="http://en.wikipedia.org/wiki/Heightmap">heightfields</a>
+      like photographic images (used for lithophane generation). It
+      simply creates triangle strips between each set of four pixels
+      within the image (the edges being combined with virtual zero
+      height pixels to ensure the mesh is manifold). This produces
+      results which can never have vertical sides but are not subject
+      to the &quot;blocking&quot; effect the cube finish
+      produces. </dd>
+    </dl>
+
+    <h3>Mesh Indexing</h3>
+    <h3>Mesh Simplification</h3>
+
     <h3>Output</h3>
 
     <p>The output file may have any arbitrary filename which must be specified.</p>
@@ -86,13 +164,20 @@
     <p>The output filename may be given as a single - which indicates
     output will be sent from the standard output.</p>
 
-    <p> The output file format is controlled by the -o switch. The file formats available as of version 1.1 are:<ul>
-	<li><b>stl</b> <a href="http://en.wikipedia.org/wiki/STL_format">3D systems Stereolithography</a> in binary (The default)</li>
-	<li><b>astl</b> <a href="http://en.wikipedia.org/wiki/STL_format">3D systems Stereolithography</a> in ASCII</li>
-	<li><b>pscad</b> <a href="http://www.openscad.org/">OpenSCAD</a> module describing a <a href="http://en.wikibooks.org/wiki/OpenSCAD_User_Manual/Primitive_Solids#polyhedron">polyhedron</a> in ASCII</li>
-	<li><b>cscad</b> <a href="http://www.openscad.org/">OpenSCAD</a> module describing union of <a href="http://en.wikibooks.org/wiki/OpenSCAD_User_Manual/Primitive_Solids#cube">cubes</a> in ASCII</li>
-	<li><b>pgm</b> <a href="http://en.wikipedia.org/wiki/Portable_graymap">Netpbm</a> (PGM type) in ASCII</li>
-    </ul></p>
+    <p> The output file format is controlled by the -o switch. The file formats available as of version 1.1 are:<dl>
+	<dt><b>stl</b></dt><dd><a href="http://en.wikipedia.org/wiki/STL_format">3D systems Stereolithography</a> in binary (The default)</dd>
+	<dt><b>astl</b></dt><dd><a href="http://en.wikipedia.org/wiki/STL_format">3D systems Stereolithography</a> in ASCII</dd>
+	<dt><b>scad</b></dt><dd><a href="http://www.openscad.org/">OpenSCAD</a> module describing a <a href="http://en.wikibooks.org/wiki/OpenSCAD_User_Manual/Primitive_Solids#polyhedron">polyhedron</a> in ASCII</dd>
+	<dt><b>rscad</b></dt><dd><a href="http://www.openscad.org/">OpenSCAD</a> module describing union of <a href="http://en.wikibooks.org/wiki/OpenSCAD_User_Manual/Primitive_Solids#cube">cubes</a> in ASCII</dd>
+	<dt><b>pgm</b></dt><dd><a href="http://en.wikipedia.org/wiki/Portable_graymap">Netpbm</a> (PGM type) in ASCII</dd>
+    </dl></p>
+
+    <p>The output scaling for width, depth and height are controlled
+    with the w,d,h switches respectively. It should be noted that
+    these only control scaling applied to the output and not the size
+    or complexity of the mesh. The values are dimensionless although
+    convention in most of the supported output formats is one unit is
+    one millimetre.</p>
 
     <h3>3D printing</h3>
 
