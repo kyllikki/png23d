@@ -3,7 +3,7 @@
 <head>
   <meta charset='utf-8'>
 
-  <title>Usage and examples</title>
+  <title>Usage</title>
 
   <style type="text/css">
     body {
@@ -43,9 +43,9 @@
     </div>
 
 
-    <h2>Usage</h2>
+    <h1>Usage</h1>
 
-    <h3>General</h3>
+    <h2>Introduction</h2>
 
     <p>Although the tool was primarily developed for 3D printing
     applications, the STL output is two maifold and most CAD
@@ -59,15 +59,66 @@
     source.</p>
 
     <p>As outlined in the <a href="index.html">main overview</a>
-    conversion is a five stage process, the control of which will be
-    detaild in their own secions below.</p>
+    conversion is a five stage process each is detaild in their own
+    secions below. The operations used to perform the conversion are:
 
-    <h3>Source image</h3>
+      <dl>
+	<dt><a href="#source_image">Source Image</a></dt>
+	<dd>Read, decode and process the source image into a greyscale bitmap.</dd>
+
+	<dt><a href="#mesh_generation">Mesh Generation</a></dt>
+	<dd>Generate a <a href="http://en.wikipedia.org/wiki/Polygon_mesh">triangle mesh</a> creating a manifold polygon.</dd>
+
+	<dt><a href="#mesh_indexing">Mesh Indexing</a></dt>
+	<dd>Index the vetices of the generated mesh.</dd>
+	
+	<dt><a href="#mesh_simplification">Mesh Simplification</a></dt>
+	<dd>Simplify the generated mesh.</dd>
+
+	<dt><a href="#output">Output</a></dt>
+	<dd>Write the generated mesh to output file in selected format.</dd>
+
+      </dl>
+    </p>
+
+    <p>The -v switch can be used to increase the verbostiy of the tool
+    and get some basic statistics and values about each stage of
+    operation.</p>
+
+
+    <h2>3D printing</h2>
+
+    <p>If you are using the output from this tool for 3D printing some
+    specific properties have been discovered (from
+    printing <em>lots</em> of faliures!)
+
+      <ul>
+	<li>The output model should have an x/y approximate spatial
+	  resolution of 0.5mm per pixel. i.e. if the output is to be
+	  printed at 100mm across the input image should be 200 pixels
+	  across.</li>
+
+	<li>A spacial resolution of more than 0.3mm is pointless and
+	simply results in huge output files which cannot be rendered
+	or printed.</li>
+
+	<li>Calculating how many layers (z resolution) at generation
+	time avoids excessive model complexity and wasted render time
+	later. i.e. if your slicing program is set for 0.4mm layers
+	and the output model is 10mm high, more than 25 layers in the
+	generated output is poinless and will introduce aliasing
+	artifacts.</li>
+
+      </ul>    
+    </p>
+
+
+    <h2 id="source_image">Source Image</h2>
 
     <p>The input file must be a PNG image that the libpng library can
-    read and a filename must always be provided as a parameter.</p>
-
-    <p>The image is converted into a 256 level grey scale image using libpng.</p>
+    read and a filename must always be provided as a parameter. The
+    image is converted into a 256 level grey scale image using
+    libpng.</p>
 
     <p>The source filename may be given as a single - which indicates
     input will be taken from the standard input. This allows for an
@@ -77,12 +128,12 @@
     gif image to png output, with colour manipulation and cropping,
     and immediatly passes the generated image to png23d without an
     intermediate temporary file.
-<pre>convert JohnvonNeumann.gif -quantize GRAY -dither none -colors 256 -negate \
+      <pre>convert JohnvonNeumann.gif -quantize GRAY -dither none -colors 256 -negate \
 -crop 350x510+90+60 +repage png:- | ./png23d -t x -f surface -o stl -l 25 \
 -d 9.6 -w 100 - JohnvonNeumann.stl</pre> 
        </p>
 
-    <h3>Mesh Generation</h3>
+    <h2 id="mesh_generation">Mesh Generation</h2>
 
     <p>This part of the process has a large impact on the output and
     should be tailored to the final use of the model.</p>
@@ -154,15 +205,55 @@
       produces. </dd>
     </dl>
 
-    <h3>Mesh Indexing</h3>
-    <h3>Mesh Simplification</h3>
+    <h2 id="mesh_indexing">Mesh Indexing</h2>
 
-    <h3>Output</h3>
+    <p>The indexing of the mesh is largely opaque to the user. This
+    process costructs a face-vertex index for the triangular faces (facets)
+    generated in the previous step. The process is greatly accelerated
+    by the use of a bloom filter.</p>
 
-    <p>The output file may have any arbitrary filename which must be specified.</p>
+    <p>The only tunable parameter to the indexing process is the -b
+    switch, this switch controls the size and number of functions for
+    the bloom filter (and hence its efectiveness). The default value
+    of 2 generally gives satisfactory results. For <em>very</em>
+    complex meshes this value may need to be increased to reduce the
+    mesh indexing time at the cost of increased memory usage.</p>
 
-    <p>The output filename may be given as a single - which indicates
-    output will be sent from the standard output.</p>
+    <h2 id="mesh_simplification">Mesh Simplification</h2>
+
+    <p>This is controlled with the -O switch similar to the
+    optimisation level of a compiler. As of version 1.1 only the
+    values 0 and 1 are usable. The value 0 simply turns off any
+    optimisation and skips simplification altogether.</p>
+
+    <p>An optimisation level of 1 performs a half edge removal. Each
+    vertex is visited and every neighbour vertex in the mesh used to
+    create an edge. Each of these edges is considered for removal. If
+    it is possible to remove the edge without damaging the topology of
+    the mesh it is removed and the process repeated untill there are
+    no more edges to consider.</p>
+
+    <p>The simplification process by its nature increases the number
+    of faces which are joind to a single vertex. The complexity of a
+    single vertex is limited by the -c parameter which may be set to a
+    value between 8 and 128. The default of 16 is is a reasonable
+    compromise on mesh complexity and memory usage. Increasing this
+    parameter may result in output meshes with fewer vertices
+    but <em>will</em> consume large quantities of memory (on a 64bit
+    system changing from 16 to 32 adds 128bytes per vertex or 24
+    megabytes for a simple 200,000 vertex model)</p>
+
+    <p>The edge removals can be visualised for debugging purposes by
+    specifying a filename with the -m switch. Caution should be
+    exercised as the resulting html files can be huge. To
+    illistrate <a href="o.html">here is an example of the output</a>
+    for the o.png test image. </p>
+
+    <h2 id="output">Output</h2>
+
+    <p>The output file may have any arbitrary filename which must be
+    specified. The output filename may be given as a single - which
+    indicates output will be sent from the standard output.</p>
 
     <p> The output file format is controlled by the -o switch. The file formats available as of version 1.1 are:<dl>
 	<dt><b>stl</b></dt><dd><a href="http://en.wikipedia.org/wiki/STL_format">3D systems Stereolithography</a> in binary (The default)</dd>
@@ -178,43 +269,6 @@
     or complexity of the mesh. The values are dimensionless although
     convention in most of the supported output formats is one unit is
     one millimetre.</p>
-
-    <h3>3D printing</h3>
-
-    <p>If you are using the output from this tool for 3D printing some
-    specific properties have been discovered (from
-    printing <em>lots</em> of faliures!)
-
-      <ul>
-	<li>The output model should have an x/y approximate spatial
-	  resolution of 0.5mm per pixel. i.e. if the output is to be
-	  printed at 100mm across the input image should be 200 pixels
-	  across.</li>
-
-	<li>A spacial resolution of more than 0.3mm is pointless and
-	simply results in huge output files which cannot be rendered
-	or printed.</li>
-
-	<li>Calculating how many layers (z resolution) at generation
-	time avoids excessive model complexity and wasted render time
-	later. i.e. if your slicing program is set for 0.4mm layers
-	and the output model is 10mm high, more than 25 layers in the
-	generated output is poinless and will introduce aliasing
-	problems.</li>
-
-      </ul>    
-    </p>
-
-    <h2>Examples</h2>
-
-    <p>Here are some examples of using the tool
-      <ul>
-	<li><a href="examples/debian-logo-scad.html"><img width="160" src="examples/printed-debian-logo-pscad-s.jpg"/>Debian open logo and scad output</a></li>
-	<li><a href="examples/debian-logo-stl.html"><img width="160" src="examples/printed-debian-logo-stl-s.jpg"/>Debian open logo and STL output</a></li>
-	<li><a href="examples/turing-lithophane.html"><img width="160" src="examples/printed-alan_turing-s.jpg"/>Lithophane of Alan Turing</a></li>
-      </ul>
-    </p>
-
 
 
   </div>
